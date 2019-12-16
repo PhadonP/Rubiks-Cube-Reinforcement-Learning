@@ -65,19 +65,20 @@ def next_state(states_input,move):
 
     return(states)
 
-def generate_envs(numStates,scrambleRange,probs=None):
-    assert(scrambleRange[0] >= 0)
-    scrambs = range(scrambleRange[0],scrambleRange[1]+1)
+def generate_envs(numStates,scrambleRange):
+    scrambs = range(1,scrambleRange[1]+1)
     legalMoves = ['U','D','L','R']
 
     states = np.tile(np.expand_dims(solvedState,0),(numStates,1))
 
-    scrambleNums = np.random.choice(scrambs,numStates,p=probs)
+    scrambleNums = np.random.choice(scrambs,numStates)
     numMoves = np.zeros(numStates)
+
     while np.max(numMoves < scrambleNums):
         poses = np.where((numMoves < scrambleNums))[0]
 
         subsetSize = max(len(poses)//len(legalMoves),1)
+
         poses = np.random.choice(poses,subsetSize)
 
         move = choice(legalMoves)
@@ -86,4 +87,4 @@ def generate_envs(numStates,scrambleRange,probs=None):
 
     return(states,scrambleNums)
 
-print(generate_envs(30, [1,30]))
+print(generate_envs(30, [1,5]))
