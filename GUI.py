@@ -48,6 +48,7 @@ class InteractiveEnv():
         self.titleSurf, self.titleRect = self.makeText(str(self.N) + " Puzzle", self.titleFont, self.textColour, None, self.xMargin, 25)
         self.resetSurf, self.resetRect = self.makeText('Reset', self.font, self.textColour, None, self.windowWidth - 100, self.windowHeight - 40)
         self.scrambleSurf, self.scrambleRect = self.makeText("Scramble", self.font, self.textColour, None, self.windowWidth - 100, self.windowHeight - 70)
+    
     def checkForQuit(self):
         for event in pygame.event.get(QUIT): # get all the QUIT events
             pygame.quit()
@@ -135,4 +136,3 @@ if __name__ == "__main__":
         pygame.display.update()
 
         GUI.fpsClock.tick(GUI.fps)
-
