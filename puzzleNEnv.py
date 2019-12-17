@@ -69,6 +69,8 @@ class PuzzleN():
         
         movingSquare = torch.cat((stateIdxs.unsqueeze(1), movingSquare),1)
         missing = torch.cat((stateIdxs.unsqueeze(1), missing),1)
+        
+        invalids = missing[torch.any((movingSquare[:,1:] >= self.rowLength) | (movingSquare[:,1:] < 0),1)][:,0]
         missing = missing[torch.all((movingSquare[:,1:] < self.rowLength) & (movingSquare[:,1:] >= 0),1)]
         movingSquare = movingSquare[torch.all((movingSquare[:,1:] < self.rowLength) & (movingSquare[:,1:] >= 0), 1)]
 
@@ -78,7 +80,7 @@ class PuzzleN():
         states[stateIdxs, missingY, missingX] = states[stateIdxs, movingSquareY, movingSquareX]
         states[stateIdxs, movingSquareY, movingSquareX] = 0
         
-        return states, stateIdxs
+        return states, stateIdxs, invalids
     
     def generateScrambles(self, numStates, scrambleRange):
         scrambs = range(1,scrambleRange+1)
@@ -96,12 +98,28 @@ class PuzzleN():
             poses = np.random.choice(poses,subsetSize)
 
             move = random.choice(list(self.actions.keys()))
-            states[poses], valids = self.nextState(states[poses], move)
+            states[poses], valids, _ = self.nextState(states[poses], move)
             numMoves[poses[valids]] = numMoves[poses[valids]] + 1
 
-        return states,scrambleNums
+        return states, scrambleNums
+    
+    def exploreNextStates(self, states):
+        nextStates = states.unsqueeze(1).repeat(1, len(self.actions), 1, 1)
+        i = 0
+        validStates = torch.tensor([True] * len(self.actions)).repeat(states.shape[0],1)
 
+        for action in self.actions:
+            nextStates[:,i,:,:], _, invalids = self.nextState(nextStates[:,i,:,:], [action]*states.shape[0])
+            validStates[invalids,i] = False
+            i += 1
+        
+        #BoolTensor stating whether nextStates are the solved state
+        goals = torch.all(nextStates == self.solvedState, 3)
+        goals = goals.all(2)
+        return nextStates, validStates, goals
 
 p = PuzzleN(15)
 
-print(p.generateScrambles(100, 5))
+#print(p.generateScrambles(100, 5))
+
+p.exploreNextStates(p.getSolvedState().repeat(2, 1,1))
