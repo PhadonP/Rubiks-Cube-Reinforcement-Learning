@@ -101,13 +101,13 @@ class PuzzleN():
             states[poses], valids, _ = self.nextState(states[poses], move)
             numMoves[poses[valids]] = numMoves[poses[valids]] + 1
 
-        return states, scrambleNums
+        return states
     
     def exploreNextStates(self, states):
         nextStates = states.unsqueeze(1).repeat(1, len(self.actions), 1, 1)
-        i = 0
         validStates = torch.tensor([True] * len(self.actions)).repeat(states.shape[0],1)
 
+        i = 0
         for action in self.actions:
             nextStates[:,i,:,:], _, invalids = self.nextState(nextStates[:,i,:,:], [action]*states.shape[0])
             validStates[invalids,i] = False
@@ -116,6 +116,7 @@ class PuzzleN():
         #BoolTensor stating whether nextStates are the solved state
         goals = torch.all(nextStates == self.solvedState, 3)
         goals = goals.all(2)
+
         return nextStates, validStates, goals
 
 p = PuzzleN(15)
