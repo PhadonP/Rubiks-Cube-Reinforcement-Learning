@@ -118,11 +118,3 @@ class PuzzleN():
         goals = goals.all(2)
 
         return nextStates, validStates, goals
-
-    
-
-p = PuzzleN(15)
-
-#print(p.generateScrambles(100, 5))
-
-p.exploreNextStates(p.getSolvedState().repeat(2, 1,1))

@@ -15,7 +15,7 @@ if __name__ == "__main__":
     device = torch.device(0 if torch.cuda.is_available() else 'cpu')
     net = Net(conf.puzzleSize + 1).to(device)
     numWorkers = multiprocessing.cpu_count()
-    optimizer = torch.optim.Adam(net.parameters(),lr = conf.lr)
+    optimizer = torch.optim.Adam(net.parameters(), lr = conf.lr)
     lossLogger = []
     accLogger = []
 
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     avgLoss, avgAcc, lossLogger, accLogger = trainUtils.train(net, device, trainloader, 
         optimizer, lossLogger, accLogger)
     
-    
+
 
 
     
