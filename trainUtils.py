@@ -4,14 +4,14 @@ from torch.utils.data import Dataset, DataLoader
 
 def makeTrainingData(environment, net, device, numStates, maxScramble):
 
-    states, numMoves = environment.generateScrambles(numStates, maxScramble)
+    states, _ = environment.generateScrambles(numStates, maxScramble)
     goalStates = torch.all(states == environment.solvedState, 2)
     goalStates = goalStates.all(1).to(device)
     
     exploredStates, validNextStates, goalNextStates = environment.exploreNextStates(states)
- 
+
     validExploredStates = exploredStates[validNextStates & ~goalNextStates]
-    validExploredStatesOneHot = oneHotEncoding(validExploredStates, 'train').to(device).detach()
+    validExploredStatesOneHot = oneHotEncoding(validExploredStates).to(device).detach()
 
     MovesToGo = net(validExploredStatesOneHot)
     
@@ -28,9 +28,7 @@ def makeTrainingData(environment, net, device, numStates, maxScramble):
 
     return encodedStates, targets
 
-def oneHotEncoding(states, mode):
-
-    #### use mode later on for training and testing
+def oneHotEncoding(states):
     rowLength = states.shape[1]
     boardSize = states.shape[1] ** 2
     states = states.view(-1, boardSize)
