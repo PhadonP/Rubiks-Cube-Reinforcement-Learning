@@ -101,7 +101,7 @@ class PuzzleN():
             states[poses], valids, _ = self.nextState(states[poses], move)
             numMoves[poses[valids]] = numMoves[poses[valids]] + 1
 
-        return states
+        return states, numMoves
     
     def exploreNextStates(self, states):
         nextStates = states.unsqueeze(1).repeat(1, len(self.actions), 1, 1)
@@ -118,6 +118,8 @@ class PuzzleN():
         goals = goals.all(2)
 
         return nextStates, validStates, goals
+
+    
 
 p = PuzzleN(15)
 

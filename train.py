@@ -1,9 +1,11 @@
 from puzzleNEnv import PuzzleN
 from net import Net
 import torch
-import torch.nn.functional as f
+
 import trainUtils
 import config
+import multiprocessing
+import torch
 
 if __name__ == "__main__":
 
@@ -11,10 +13,25 @@ if __name__ == "__main__":
     env = PuzzleN(conf.puzzleSize)
     
     device = torch.device(0 if torch.cuda.is_available() else 'cpu')
-    net = Net((conf.puzzleSize + 1) ** 2).to(device)
+    net = Net(conf.puzzleSize + 1).to(device)
+    numWorkers = multiprocessing.cpu_count()
+    optimizer = torch.optim.Adam(net.parameters(),lr = conf.lr)
+    lossLogger = []
+    accLogger = []
 
-    #for i in range(5):
+    scrambles, targetMovesToGo = trainUtils.makeTrainingData(env, net, device,
+        conf.numberOfScrambles, conf.scrambleDepth)
+    
+    scramblesDataSet = trainUtils.Puzzle15DataSet(scrambles, targetMovesToGo)
 
-    scrambles, targetMovesToGo = trainUtils.makeTrainingData(env, net, device, conf.numberOfScrambles, conf.scrambleDepth)
+    trainloader = torch.utils.data.DataLoader(scramblesDataSet,
+        batch_size=conf.batchSize, shuffle=True, num_workers=0)
+
+    avgLoss, avgAcc, lossLogger, accLogger = trainUtils.train(net, device, trainloader, 
+        optimizer, lossLogger, accLogger)
+    
+    
+
+
     
     

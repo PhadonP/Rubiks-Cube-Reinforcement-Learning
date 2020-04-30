@@ -26,5 +26,13 @@ class Config():
     @property
     def scrambleDepth(self):
         return self.train.getint('scrambleDepth')
+
+    @property
+    def batchSize(self):
+        return self.train.getint('batchSize')
+    
+    @property
+    def lr(self):
+        return self.train.getfloat('lr')
     
 
