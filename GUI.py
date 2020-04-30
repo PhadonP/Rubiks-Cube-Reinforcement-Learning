@@ -4,7 +4,7 @@ from pygame.locals import *
 
 from puzzleNEnv import PuzzleN
 
-class InteractiveGUI():
+class InteractiveEnv():
     def __init__(self, game):
         self.game = game
         self.rowLength = self.game.rowLength
@@ -121,7 +121,7 @@ class InteractiveGUI():
 if __name__ == "__main__":
 
     puzzle15 = PuzzleN(15)
-    GUI = InteractiveGUI(puzzle15)
+    GUI = InteractiveEnv(puzzle15)
 
     while True: # main game loop
         msg = 'Press arrow keys to slide.' # contains the message to show in the upper left corner.
