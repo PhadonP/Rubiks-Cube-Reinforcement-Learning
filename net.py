@@ -6,17 +6,17 @@ class Net(nn.Module):
         super(Net, self).__init__()
 
         self.convlayers = nn.Sequential(
-            nn.Conv2d(channelsIn, 10, kernel_size=2, stride=1, padding=1),
+            nn.Conv2d(channelsIn, 100, kernel_size=2, stride=1, padding=1),
             nn.ReLU(),
-            nn.Conv2d(10, 10, kernel_size=2, stride=1, padding=0),
+            nn.Conv2d(100, 200, kernel_size=2, stride=1, padding=0),
             nn.ReLU(),
-            nn.Conv2d(10, 10, kernel_size=2, stride=1, padding=0),
+            nn.Conv2d(200, 100, kernel_size=2, stride=1, padding=0),
         )
 
         self.linear = nn.Sequential(
-                        nn.Linear(90, 10),
+                        nn.Linear(900, 100),
                         nn.ReLU(),
-                        nn.Linear(10, 1)
+                        nn.Linear(100, 1)
         )
 
     def forward(self, input):

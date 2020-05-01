@@ -37,6 +37,7 @@ def oneHotEncoding(states):
     encodedStates = encodedStates.scatter(2, indices.unsqueeze(-1),1).view(-1, boardSize, rowLength, rowLength).float()
     return encodedStates
 
+
 class Puzzle15DataSet(Dataset):
     def __init__(self, data, labels):
         self.data = data
@@ -48,11 +49,10 @@ class Puzzle15DataSet(Dataset):
     def __getitem__(self, idx):
         return self.data[idx], self.labels[idx]
 
-def train(net, device, loader, optimizer, loss_logger, acc_logger):
+def train(net, device, loader, optimizer, lossLogger):
     #Set Network in train mode
     net.train()
     epochLoss = 0
-    epochAcc = 0
     
     for i, (x, y) in enumerate(loader):
         
@@ -77,9 +77,9 @@ def train(net, device, loader, optimizer, loss_logger, acc_logger):
         epochLoss += loss.item()
 
         #log the loss for plotting
-        loss_logger.append(loss.item())
+        lossLogger.append(loss.item())
         
         print("TRAINING: | Iteration [%d/%d] | Loss %.2f |" %(i+1 ,len(loader) , loss.item()))
     
     #return the average loss and acc from the epoch as well as the logger array       
-    return epochLoss / len(loader), epochAcc / len(loader), loss_logger, acc_logger
+    return epochLoss / len(loader), lossLogger

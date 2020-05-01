@@ -30,9 +30,22 @@ class Config():
     @property
     def batchSize(self):
         return self.train.getint('batchSize')
+
+    @property
+    def numEpochs(self):
+        return self.train.getint('numEpochs')
     
     @property
     def lr(self):
         return self.train.getfloat('lr')
     
+    @property
+    def tau(self):
+        return self.train.getfloat('tau')
+    
+    def trainName(self, suffix = None):
+        name = "Puzzle-%d,ScrambleDepth=%d" % (self.puzzleSize, self.scrambleDepth)
+        if suffix:
+            name += "," + suffix
+        return name
 

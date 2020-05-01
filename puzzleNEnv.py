@@ -2,7 +2,6 @@ import torch
 import random
 import numpy as np
 
-
 class PuzzleN():
     def __init__(self, N):
         assert N in [3, 8, 15, 24, 35, 48], "N must be valid"
