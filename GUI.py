@@ -2,7 +2,7 @@ import pygame
 import sys
 from pygame.locals import *
 
-from environment.PuzzleN import InteractivePuzzleN
+from environment.PuzzleN import PuzzleN
 
 class GUI():
     def __init__(self, game):
@@ -120,13 +120,13 @@ class GUI():
 
 if __name__ == "__main__":
 
-    puzzle15 = InteractivePuzzleN(15)
+    puzzle15 = PuzzleN(15)
     GUI = GUI(puzzle15)
 
     while True: # main game loop
         msg = 'Press arrow keys to slide.' # contains the message to show in the upper left corner.
         
-        if puzzle15.checkIfSolved():
+        if puzzle15.checkIfSolvedSingle(puzzle15.state):
                 msg = 'Solved!'
         
         GUI.drawGame(msg)

@@ -16,6 +16,10 @@ class Config():
         return self.data['train']
 
     @property
+    def solve(self):
+        return self.data['solve']
+
+    @property
     def puzzleSize(self):
         return self.general.getint('puzzleSize')
     
@@ -42,6 +46,15 @@ class Config():
     @property
     def tau(self):
         return self.train.getfloat('tau')
+
+    @property
+    def depthPenalty(self):
+        return self.solve.getfloat('depthPenalty')
+    
+    @property
+    def numParallel(self):
+        return self.solve.getint('numParallel')
+    
     
     def trainName(self, suffix = None):
         name = "Puzzle-%d,ScrambleDepth=%d" % (self.puzzleSize, self.scrambleDepth)

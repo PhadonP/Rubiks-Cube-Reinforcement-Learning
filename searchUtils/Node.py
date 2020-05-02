@@ -1,15 +1,15 @@
 import torch
 
 class Node():
-    def __init__(self, state, parent, parentMove, depth):
+    def __init__(self, state, parent, parentMove, depth, cost, isSolved):
 
             self.depth = depth #Moves from root to this state
-            self.heuristic = None #Moves to Go estimate from network
             self.cost = None #Addition of Heuristic and current path cost
 
             self.state = state
             self.parent = parent
             self.parentMove = parentMove
+            self.isSolved = isSolved
 
             self.hashState = hash(self.state)
 

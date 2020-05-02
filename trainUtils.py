@@ -10,7 +10,7 @@ def makeTrainingData(environment, net, device, numStates, maxScramble):
     exploredStates, validNextStates, goalNextStates = environment.exploreNextStates(states)
 
     validExploredStates = exploredStates[validNextStates & ~goalNextStates]
-    validExploredStatesOneHot = environment.oneHotEncoding(validExploredStates).to(device).detach()
+    validExploredStatesOneHot = environment.oneHotEncoding(validExploredStates).to(device)
 
     MovesToGo = net(validExploredStatesOneHot)
     

@@ -9,7 +9,6 @@ from net import Net
 import torch
 
 import trainUtils
-import multiprocessing
 import torch
 
 from tensorboardX import SummaryWriter
@@ -19,18 +18,16 @@ if __name__ == "__main__":
     log = logging.getLogger("train")
     logging.basicConfig(format="%(asctime)-15s %(levelname)s %(message)s", level=logging.INFO)
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--ini", required=True, help="Ini file to use for this run")
     parser.add_argument("-n", "--name", required=True, help="Name of the run")
     args = parser.parse_args()
 
-    conf = config.Config(args.ini)
+    conf = config.Config("ini/15puzzleinitial.ini")
     env = PuzzleN(conf.puzzleSize)
 
     name = conf.trainName(suffix=args.name)
     
     writer = SummaryWriter(comment="-" + name)
     savePath = os.path.join("saves", name)
-    os.makedirs(savePath)
     
     device = torch.device(0 if torch.cuda.is_available() else 'cpu')
 
@@ -40,14 +37,14 @@ if __name__ == "__main__":
     for targetParam, param in zip(net.parameters(), targetNet.parameters()):
         targetParam.data.copy_(param)
 
-    numWorkers = multiprocessing.cpu_count()
+    #numWorkers = multiprocessing.cpu_count()
     optimizer = torch.optim.Adam(net.parameters(), lr = conf.lr)
     numEpochs = conf.numEpochs
     tau = conf.tau
     
     lossLogger = []
 
-    for epoch in range(numEpochs):
+    for epoch in range(1, numEpochs + 1):
 
         scrambles, targetMovesToGo = trainUtils.makeTrainingData(env, targetNet, device,
             conf.numberOfScrambles, conf.scrambleDepth)
