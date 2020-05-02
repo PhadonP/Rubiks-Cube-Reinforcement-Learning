@@ -4,7 +4,7 @@ import argparse
 import config
 import logging
 
-from puzzleNEnv import PuzzleN
+from environment.PuzzleN import PuzzleN
 from net import Net
 import torch
 
@@ -16,6 +16,7 @@ from tensorboardX import SummaryWriter
 
 if __name__ == "__main__":
 
+    log = logging.getLogger("train")
     logging.basicConfig(format="%(asctime)-15s %(levelname)s %(message)s", level=logging.INFO)
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--ini", required=True, help="Ini file to use for this run")
@@ -26,7 +27,7 @@ if __name__ == "__main__":
     env = PuzzleN(conf.puzzleSize)
 
     name = conf.trainName(suffix=args.name)
-    print(name)
+    
     writer = SummaryWriter(comment="-" + name)
     savePath = os.path.join("saves", name)
     os.makedirs(savePath)
@@ -53,11 +54,13 @@ if __name__ == "__main__":
         
         scramblesDataSet = trainUtils.Puzzle15DataSet(scrambles, targetMovesToGo)
 
-        trainloader = torch.utils.data.DataLoader(scramblesDataSet,
+        trainLoader = torch.utils.data.DataLoader(scramblesDataSet,
             batch_size=conf.batchSize, shuffle=True, num_workers=0)
 
-        avgLoss, lossLogger = trainUtils.train(net, device, trainloader, optimizer, lossLogger)
-        
+        avgLoss, lossLogger = trainUtils.train(net, device, trainLoader, optimizer, lossLogger)
+
+        print("Epoch: %d" %(epoch))
+
         for targetParam, param in zip(targetNet.parameters(), net.parameters()):
             targetParam.data.copy_(tau * param + (1 - tau) * targetParam)
 
@@ -74,7 +77,7 @@ if __name__ == "__main__":
         if epoch % 100 == 0:
 
             scrambles, numMoves = env.generateScrambles(20, conf.scrambleDepth)
-            oneHot = trainUtils.oneHotEncoding(scrambles).to(device).detach()
+            oneHot = env.oneHotEncoding(scrambles).to(device).detach()
             print(net(oneHot).squeeze())
             print(numMoves)
             print(scrambles)

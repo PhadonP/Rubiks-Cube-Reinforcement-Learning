@@ -8,20 +8,24 @@ class Net(nn.Module):
         self.convlayers = nn.Sequential(
             nn.Conv2d(channelsIn, 100, kernel_size=2, stride=1, padding=1),
             nn.ReLU(),
+            nn.BatchNorm2d(100),
             nn.Conv2d(100, 200, kernel_size=2, stride=1, padding=0),
             nn.ReLU(),
+            nn.BatchNorm2d(200),
             nn.Conv2d(200, 100, kernel_size=2, stride=1, padding=0),
+            nn.ReLU(),
+            nn.BatchNorm2d(100)
         )
 
         self.linear = nn.Sequential(
                         nn.Linear(900, 100),
                         nn.ReLU(),
+                        nn.BatchNorm1d(100),
                         nn.Linear(100, 1)
         )
 
     def forward(self, input):
         outconv = self.convlayers(input)
-
         flattened = outconv.view(outconv.shape[0], -1)
         return self.linear(flattened)
         

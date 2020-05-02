@@ -22,44 +22,12 @@ class PuzzleN():
             state.append([n + self.rowLength * i for n in range(1, self.rowLength + 1)])
         state[-1][-1] = 0
 
-        return torch.tensor(state, dtype = torch.uint8)
+        return torch.tensor(state, dtype = torch.uint8)    
     
-    def checkIfSolved(self):
-        return torch.equal(self.state, self.solvedState)
-    
-    def getState(self):
-        return self.state
-    
-    def doAction(self, action):
-        assert action in self.actions
-        missing = torch.tensor(torch.where(self.state == 0))
-        movingSquare = missing + self.actions[action]
-
-        if self.validAction(movingSquare):
-            self.state[tuple(missing)], self.state[tuple(movingSquare)], = self.state[tuple(movingSquare)], 0
-
-    def validAction(self, movedSquare):
-        return 0 <= movedSquare[0] < self.rowLength and 0 <= movedSquare[1] < self.rowLength
-    
-    def generateScramble(self, noMoves):
-        state = self.getSolvedState()
-        missing = [self.rowLength - 1, self.rowLength - 1]
-        scramble = []
-        movesDone = 0
-        passedMove = None
-        
-        while movesDone < noMoves:
-            randomMove = random.choice(list(self.actions.values()))
-            if randomMove == passedMove:
-                continue
-            movingSquare = [sum(x) for x in zip(missing, randomMove)]
-            if self.validAction(movingSquare):
-                passedMove = randomMove
-                movesDone += 1
-                state[tuple(missing)], state[tuple(movingSquare)], = state[tuple(movingSquare)], 0
-                missing = movingSquare
-        
-        return state
+    def checkIfSolved(self, states):
+        goals = torch.all(states == self.solvedState, 3)
+        goals = goals.all(2)
+        return goals
 
     def nextState(self, states, actions):
         stateIdxs, missingY, missingX = torch.where(states == 0)
@@ -112,8 +80,49 @@ class PuzzleN():
             validStates[invalids,i] = False
             i += 1
         
-        #BoolTensor stating whether nextStates are the solved state
-        goals = torch.all(nextStates == self.solvedState, 3)
-        goals = goals.all(2)
-
+        goals = self.checkIfSolved(nextStates)
+    
         return nextStates, validStates, goals
+    
+    @staticmethod
+    def oneHotEncoding(states):
+        rowLength = states.shape[1]
+        boardSize = states.shape[1] ** 2
+        states = states.view(-1, boardSize)
+        _, indices = states.sort(1)
+        encodedStates = torch.zeros(states.shape[0], boardSize, boardSize)
+        encodedStates = encodedStates.scatter(2, indices.unsqueeze(-1),1).view(-1, boardSize, rowLength, rowLength).float()
+        return encodedStates
+
+
+class InteractivePuzzleN(PuzzleN):
+
+    def checkIfSolved(self):
+        return torch.equal(self.state, self.solvedState)
+    
+    def doAction(self, action):
+        assert action in self.actions
+        missing = torch.tensor(torch.where(self.state == 0))
+        movingSquare = missing + self.actions[action]
+
+        if self.validAction(movingSquare):
+            self.state[tuple(missing)], self.state[tuple(movingSquare)], = self.state[tuple(movingSquare)], 0
+
+    def validAction(self, movedSquare):
+        return 0 <= movedSquare[0] < self.rowLength and 0 <= movedSquare[1] < self.rowLength
+    
+    def generateScramble(self, noMoves):
+        state = self.solvedState.clone()
+        missing = [self.rowLength - 1, self.rowLength - 1]
+        scramble = []
+        movesDone = 0
+        
+        while movesDone < noMoves:
+            randomMove = random.choice(list(self.actions.values()))
+            movingSquare = [sum(x) for x in zip(missing, randomMove)]
+            if self.validAction(movingSquare):
+                movesDone += 1
+                state[tuple(missing)], state[tuple(movingSquare)], = state[tuple(movingSquare)], 0
+                missing = movingSquare
+        
+        return state

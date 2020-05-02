@@ -2,9 +2,9 @@ import pygame
 import sys
 from pygame.locals import *
 
-from puzzleNEnv import PuzzleN
+from environment.PuzzleN import InteractivePuzzleN
 
-class InteractiveEnv():
+class GUI():
     def __init__(self, game):
         self.game = game
         self.rowLength = self.game.rowLength
@@ -75,8 +75,8 @@ class InteractiveEnv():
                 if self.resetRect.collidepoint(event.pos):
                     self.game.state = self.game.getSolvedState() # clicked on Reset button
                 elif self.scrambleRect.collidepoint(event.pos):
-                    self.game.state = self.game.generateScramble(3)
-
+                    self.game.state = self.game.generateScramble(500)
+        
     def drawGame(self, msg):
         self.displaySurf.fill(self.bgColour)
         if msg:
@@ -120,16 +120,16 @@ class InteractiveEnv():
 
 if __name__ == "__main__":
 
-    puzzle15 = PuzzleN(15)
-    GUI = InteractiveEnv(puzzle15)
+    puzzle15 = InteractivePuzzleN(15)
+    GUI = GUI(puzzle15)
 
     while True: # main game loop
         msg = 'Press arrow keys to slide.' # contains the message to show in the upper left corner.
+        
         if puzzle15.checkIfSolved():
-            msg = 'Solved!'
-
+                msg = 'Solved!'
+        
         GUI.drawGame(msg)
-
         GUI.checkForQuit()
         GUI.checkInput()
 
