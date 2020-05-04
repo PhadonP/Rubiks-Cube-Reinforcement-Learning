@@ -6,7 +6,7 @@ from net import Net
 
 
 def batchedWeightedAStarSearch(
-    scramble, depthPenalty, numParallel, env, heuristicFn, device, maxSearchItr
+    scramble, depthWeight, numParallel, env, heuristicFn, device, maxSearchItr
 ):
 
     openNodes = PriorityQueue()
@@ -87,7 +87,7 @@ def batchedWeightedAStarSearch(
             hValue = heuristicFn(childrenStates)
 
             bestHValue = min(hValue)
-            costs = hValue + depthPenalty * depths
+            costs = hValue + depthWeight * depths
 
             for i in range(len(children)):
                 children[i].cost = costs[i]

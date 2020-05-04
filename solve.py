@@ -1,4 +1,4 @@
-impors config
+import config
 import argparse
 import os
 
@@ -37,8 +37,6 @@ if __name__ == "__main__":
     net.load_state_dict(torch.load(loadPath)["net_state_dict"])
     net.eval()
 
-    scramble = env.generateScramble(args.scrambleDepth)
-
     if args.heuristicFunction == "net":
         heuristicFn = net
     elif args.heuristicFunction == "manhattan":
@@ -46,26 +44,57 @@ if __name__ == "__main__":
     else:
         raise ValueError("Invalid Heuristic Function")
 
-    moves, numNodesGenerated, searchItr, isSolved, time = batchedWeightedAStarSearch(
-        scramble,
-        conf.depthPenalty,
-        conf.numParallel,
-        env,
-        heuristicFn,
-        device,
-        conf.maxSearchItr,
-    )
+    movesList = []
+    numNodesGeneratedList = []
+    searchItrList = []
+    isSolvedList = []
+    timeList = []
+    for _ in range(2):
 
-    if isSolved:
-        print("Solved!")
-        print(scramble)
-        print("Moves are %s" % "".join(moves))
-        print("Solve Length is %i" % len(moves))
-        print("%i Nodes were generated" % numNodesGenerated)
-        print("There were %i search iterations" % searchItr)
-        print("Time of Solve is %.3f seconds" % time)
-    else:
-        print(scramble)
-        print("Max Search Iterations Reached")
-        print("%i Nodes were generated" % numNodesGenerated)
-        print("Search time was %.3f seconds" % time)
+        scramble = env.generateScramble(args.scrambleDepth)
+
+        (
+            moves,
+            numNodesGenerated,
+            searchItr,
+            isSolved,
+            time,
+        ) = batchedWeightedAStarSearch(
+            scramble,
+            conf.depthWeight,
+            conf.numParallel,
+            env,
+            heuristicFn,
+            device,
+            conf.maxSearchItr,
+        )
+
+        if moves:
+            movesList.append(len(moves))
+                
+        numNodesGeneratedList.append(numNodesGenerated)
+        searchItrList.append(searchItrList)
+        isSolvedList.append(isSolved)
+        timeList.append(time)
+
+        if isSolved:
+            print("Solved!")
+            print(scramble)
+            print("Moves are %s" % "".join(moves))
+            print("Solve Length is %i" % len(moves))
+            print("%i Nodes were generated" % numNodesGenerated)
+            print("There were %i search iterations" % searchItr)
+            print("Time of Solve is %.3f seconds" % time)
+        else:
+            print(scramble)
+            print("Max Search Iterations Reached")
+            print("%i Nodes were generated" % numNodesGenerated)
+            print("Search time was %.3f seconds" % time)
+
+    print("Average Move Count %.2f" % (sum(movesList) / len(movesList)))
+    print(
+        "Average Nodes Generated: %.2f"
+        % (sum(numNodesGeneratedList) / len(numNodesGeneratedList))
+    )
+    print("Number Solved: %d" % isSolvedList.count(True))
+    print("Average Time: %.2f seconds" % (sum(timeList) / len(timeList)))

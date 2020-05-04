@@ -72,16 +72,20 @@ class PuzzleN:
 
         return states, stateIdxs, invalids
 
-    def doAction(self, action):
+    def doAction(self, action, state=None):
         assert action in self.actions
-        missing = torch.tensor(torch.where(self.state == 0))
+        if state is None:
+            state = self.state
+        missing = torch.tensor(torch.where(state == 0))
         movingSquare = missing + self.actions[action]
 
         if self.validAction(movingSquare):
-            self.state[tuple(missing)], self.state[tuple(movingSquare)], = (
-                self.state[tuple(movingSquare)],
+            state[tuple(missing)], state[tuple(movingSquare)], = (
+                state[tuple(movingSquare)],
                 0,
             )
+
+        return state
 
     def validAction(self, movedSquare):
         return (
@@ -127,7 +131,7 @@ class PuzzleN:
             states[poses], valids, _ = self.nextState(states[poses], move)
             numMoves[poses[valids]] = numMoves[poses[valids]] + 1
 
-        return states, numMoves
+        return states
 
     def exploreNextStates(self, states):
         nextStates = states.unsqueeze(1).repeat(1, len(self.actions), 1, 1)

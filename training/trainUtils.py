@@ -4,7 +4,7 @@ from torch.utils.data import Dataset
 
 def makeTrainingData(environment, net, device, numStates, scrambleDepth):
 
-    states, _ = environment.generateScrambles(numStates, scrambleDepth)
+    states = environment.generateScrambles(numStates, scrambleDepth)
     goalStates = torch.all(states == environment.solvedState, 2)
     goalStates = goalStates.all(1)
 

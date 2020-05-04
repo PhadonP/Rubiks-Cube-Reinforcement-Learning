@@ -2,7 +2,16 @@ import pygame
 import sys
 from pygame.locals import *
 
+import config
+import argparse
+import os
+import multiprocessing
+import time
+
+import torch
 from environment.PuzzleN import PuzzleN
+from search.BWAS import batchedWeightedAStarSearch
+from net import Net
 
 
 class GUI:
@@ -66,12 +75,12 @@ class GUI:
             self.xMargin,
             25,
         )
-        self.resetSurf, self.resetRect = self.makeText(
-            "Reset",
+        self.solveSurf, self.solveRect = self.makeText(
+            "Solve",
             self.font,
             self.textColour,
             None,
-            self.windowWidth - 100,
+            self.windowWidth - 85,
             self.windowHeight - 40,
         )
         self.scrambleSurf, self.scrambleRect = self.makeText(
@@ -79,9 +88,11 @@ class GUI:
             self.font,
             self.textColour,
             None,
-            self.windowWidth - 100,
+            self.windowWidth - 125,
             self.windowHeight - 70,
         )
+
+        self.pressSolved = False
 
     def checkForQuit(self):
         for event in pygame.event.get(QUIT):  # get all the QUIT events
@@ -106,10 +117,8 @@ class GUI:
                 elif event.key in (K_DOWN, K_s):
                     self.game.doAction("D")
             elif event.type == MOUSEBUTTONUP:
-                if self.resetRect.collidepoint(event.pos):
-                    self.game.state = (
-                        self.game.getSolvedState()
-                    )  # clicked on Reset button
+                if self.solveRect.collidepoint(event.pos):
+                    self.pressSolved = True  # clicked on Solve button
                 elif self.scrambleRect.collidepoint(event.pos):
                     self.game.state = self.game.generateScramble(500)
 
@@ -142,7 +151,7 @@ class GUI:
         )
 
         self.displaySurf.blit(self.titleSurf, self.titleRect)
-        self.displaySurf.blit(self.resetSurf, self.resetRect)
+        self.displaySurf.blit(self.solveSurf, self.solveRect)
         self.displaySurf.blit(self.scrambleSurf, self.scrambleRect)
 
     def makeText(self, text, font, colour, bgColour, top, left):
@@ -175,18 +184,91 @@ class GUI:
 
 if __name__ == "__main__":
 
-    puzzle15 = PuzzleN(15)
-    GUI = GUI(puzzle15)
+    conf = config.Config("ini/15puzzleinitial.ini")
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-n", "--network", required=True, help="Path of Saved Network", type=str
+    )
+
+    args = parser.parse_args()
+
+    loadPath = args.network
+
+    if not os.path.isfile(loadPath):
+        raise ValueError("No Network Saved in this Path")
+
+    device = torch.device(0 if torch.cuda.is_available() else "cpu")
+
+    net = Net(conf.puzzleSize + 1).to(device)
+    net.load_state_dict(torch.load(loadPath)["net_state_dict"])
+    net.eval()
+
+    puzzleN = PuzzleN(conf.puzzleSize)
+    GUI = GUI(puzzleN)
+    startSolving = False
 
     while True:  # main game loop
         msg = "Press arrow keys to slide."  # contains the message to show in the upper left corner.
 
-        if puzzle15.checkIfSolvedSingle(puzzle15.state):
+        if GUI.pressSolved:
+            (
+                moves,
+                numNodesGenerated,
+                searchItr,
+                isSolved,
+                solveTime,
+            ) = batchedWeightedAStarSearch(
+                puzzleN.state,
+                conf.depthWeight,
+                conf.numParallel,
+                puzzleN,
+                net,
+                device,
+                conf.maxSearchItr,
+            )
+
+            print("Solved!")
+            print("Moves are %s" % "".join(moves))
+            print("Solve Length is %i" % len(moves))
+            print("%i Nodes were generated" % numNodesGenerated)
+            print("There were %i search iterations" % searchItr)
+            print("Time of Solve is %.3f seconds" % solveTime)
+
+            GUI.pressSolved = False
+            startSolving = True
+            i = 0
+            prevTime = time.time()
+            # solveProcess = multiprocessing.Process(
+            #     target=batchedWeightedAStarSearch,
+            #     args=(
+            #         puzzleN.state,
+            #         conf.depthWeight,
+            #         conf.numParallel,
+            #         puzzleN,
+            #         net,
+            #         device,
+            #         conf.maxSearchItr,
+            #     ),
+            # )
+            # solveProcess.start()
+
+        if puzzleN.checkIfSolvedSingle(puzzleN.state):
             msg = "Solved!"
+        elif startSolving:
+            msg = "Found a %d move solution in %.2f seconds" % (len(moves), solveTime)
 
         GUI.drawGame(msg)
         GUI.checkForQuit()
-        GUI.checkInput()
+
+        currTime = time.time()
+        if startSolving and currTime - prevTime > 0.25:
+            prevTime = currTime
+            puzzleN.doAction(moves[i])
+            i += 1
+            if i == len(moves):
+                startSolving = False
+        else:
+            GUI.checkInput()
 
         pygame.display.update()
 

@@ -26,6 +26,14 @@ class Config:
         return self.general.getint("puzzleSize")
 
     @property
+    def numWorkers(self):
+        return self.general.getint("numWorkers")
+
+    @property
+    def numProcs(self):
+        return self.general.getint("numProcs")
+
+    @property
     def numberOfScrambles(self):
         return self.train.getint("numberOfScrambles")
 
@@ -50,8 +58,8 @@ class Config:
         return self.train.getfloat("tau")
 
     @property
-    def depthPenalty(self):
-        return self.solve.getfloat("depthPenalty")
+    def depthWeight(self):
+        return self.solve.getfloat("depthWeight")
 
     @property
     def numParallel(self):
