@@ -1,8 +1,7 @@
 import os
 import time
-import logging
 import config
-import multiprocessing
+import torch.multiprocessing as mp
 
 from environment.PuzzleN import PuzzleN
 from net import Net
@@ -15,10 +14,6 @@ from tensorboardX import SummaryWriter
 
 if __name__ == "__main__":
 
-    log = logging.getLogger("train")
-    logging.basicConfig(
-        format="%(asctime)-15s %(levelname)s %(message)s", level=logging.INFO
-    )
     conf = config.Config("ini/15puzzleinitial.ini")
     env = PuzzleN(conf.puzzleSize)
 
@@ -49,26 +44,51 @@ if __name__ == "__main__":
     for epoch in range(1, numEpochs + 1):
 
         genProcesses = []
+        genQueue = mp.Queue()
+
+        startGenTime = time.time()
 
         for _ in range(numProcs):
-            p = multiprocessing.Process(
-                trainUtils.makeTrainingData,
+            p = mp.Process(
+                target=trainUtils.makeTrainingData,
                 args=(
                     env,
                     targetNet,
                     device,
                     conf.numberOfScrambles // numProcs,
                     conf.scrambleDepth,
+                    genQueue,
                 ),
             )
             genProcesses.append(p)
             p.start()
 
-        # scrambles, targetMovesToGo = trainUtils.makeTrainingData(
+        scrambles = []
+        targets = []
+        procsFinished = 0
+
+        while procsFinished < numProcs:
+            if not genQueue.empty():
+                scrambleSet, targetSet = genQueue.get()
+                scrambles.append(scrambleSet)
+                targets.append(targetSet)
+                procsFinished += 1
+
+        for p in genProcesses:
+            p.join()
+
+        scrambles = torch.cat(scrambles)
+        targets = torch.cat(targets)
+
+        # scrambles, targets = trainUtils.makeTrainingData(
         #     env, targetNet, device, conf.numberOfScrambles, conf.scrambleDepth
         # )
 
-        scramblesDataSet = trainUtils.Puzzle15DataSet(scrambles, targetMovesToGo)
+        genTime = time.time() - startGenTime
+
+        print("Generation time is %.3f seconds" % genTime)
+
+        scramblesDataSet = trainUtils.Puzzle15DataSet(scrambles, targets)
 
         trainLoader = torch.utils.data.DataLoader(
             scramblesDataSet,

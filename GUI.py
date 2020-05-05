@@ -5,7 +5,7 @@ from pygame.locals import *
 import config
 import argparse
 import os
-import multiprocessing
+import torch.multiprocessing as mp
 import time
 
 import torch
@@ -207,50 +207,68 @@ if __name__ == "__main__":
     GUI = GUI(puzzleN)
     startSolving = False
 
+    solveQueue = mp.Queue()
+
     while True:  # main game loop
         msg = "Press arrow keys to slide."  # contains the message to show in the upper left corner.
 
         if GUI.pressSolved:
+            # (
+            #     moves,
+            #     numNodesGenerated,
+            #     searchItr,
+            #     isSolved,
+            #     solveTime,
+            # ) = batchedWeightedAStarSearch(
+            #     puzzleN.state,
+            #     conf.depthWeight,
+            #     conf.numParallel,
+            #     puzzleN,
+            #     net,
+            #     device,
+            #     conf.maxSearchItr,
+            # )
+
+            solveProcess = mp.Process(
+                target=batchedWeightedAStarSearch,
+                args=(
+                    puzzleN.state,
+                    conf.depthWeight,
+                    conf.numParallel,
+                    puzzleN,
+                    net,
+                    device,
+                    conf.maxSearchItr,
+                    solveQueue,
+                ),
+            )
+            solveProcess.start()
+            GUI.pressSolved = False
+
+        if not solveQueue.empty():
             (
                 moves,
                 numNodesGenerated,
                 searchItr,
                 isSolved,
                 solveTime,
-            ) = batchedWeightedAStarSearch(
-                puzzleN.state,
-                conf.depthWeight,
-                conf.numParallel,
-                puzzleN,
-                net,
-                device,
-                conf.maxSearchItr,
-            )
+            ) = solveQueue.get()
 
-            print("Solved!")
-            print("Moves are %s" % "".join(moves))
-            print("Solve Length is %i" % len(moves))
+            if isSolved:
+                print("Solved!")
+                print("Moves are %s" % "".join(moves))
+                print("Solve Length is %i" % len(moves))
+                print("Time of Solve is %.3f seconds" % solveTime)
+                startSolving = True
+            else:
+                print("No Solution Found")
+                print("Search time is %.3f seconds" % solveTime)
+
             print("%i Nodes were generated" % numNodesGenerated)
             print("There were %i search iterations" % searchItr)
-            print("Time of Solve is %.3f seconds" % solveTime)
 
-            GUI.pressSolved = False
-            startSolving = True
             i = 0
             prevTime = time.time()
-            # solveProcess = multiprocessing.Process(
-            #     target=batchedWeightedAStarSearch,
-            #     args=(
-            #         puzzleN.state,
-            #         conf.depthWeight,
-            #         conf.numParallel,
-            #         puzzleN,
-            #         net,
-            #         device,
-            #         conf.maxSearchItr,
-            #     ),
-            # )
-            # solveProcess.start()
 
         if puzzleN.checkIfSolvedSingle(puzzleN.state):
             msg = "Solved!"
@@ -261,12 +279,14 @@ if __name__ == "__main__":
         GUI.checkForQuit()
 
         currTime = time.time()
+
         if startSolving and currTime - prevTime > 0.25:
-            prevTime = currTime
-            puzzleN.doAction(moves[i])
-            i += 1
             if i == len(moves):
                 startSolving = False
+            else:
+                prevTime = currTime
+                puzzleN.doAction(moves[i])
+                i += 1
         else:
             GUI.checkInput()
 

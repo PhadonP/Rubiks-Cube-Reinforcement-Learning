@@ -49,7 +49,9 @@ if __name__ == "__main__":
     searchItrList = []
     isSolvedList = []
     timeList = []
-    for _ in range(2):
+
+    numToSolve = 3
+    for i in range(1, numToSolve + 1):
 
         scramble = env.generateScramble(args.scrambleDepth)
 
@@ -71,9 +73,9 @@ if __name__ == "__main__":
 
         if moves:
             movesList.append(len(moves))
-                
+
         numNodesGeneratedList.append(numNodesGenerated)
-        searchItrList.append(searchItrList)
+        searchItrList.append(searchItr)
         isSolvedList.append(isSolved)
         timeList.append(time)
 
@@ -91,6 +93,8 @@ if __name__ == "__main__":
             print("%i Nodes were generated" % numNodesGenerated)
             print("Search time was %.3f seconds" % time)
 
+        print("%d out of %d" % (i, numToSolve))
+
     print("Average Move Count %.2f" % (sum(movesList) / len(movesList)))
     print(
         "Average Nodes Generated: %.2f"
@@ -98,3 +102,22 @@ if __name__ == "__main__":
     )
     print("Number Solved: %d" % isSolvedList.count(True))
     print("Average Time: %.2f seconds" % (sum(timeList) / len(timeList)))
+
+    print(
+        "Average Time of Successful Solves is %.2f seconds"
+        % (
+            sum([i for (i, v) in zip(timeList, isSolvedList) if v])
+            / len([i for (i, v) in zip(timeList, isSolvedList) if v])
+        )
+    )
+    print(
+        "Average Search Iterations of Successful Solves is %.2f"
+        % (
+            sum([i for (i, v) in zip(searchItrList, isSolvedList) if v])
+            / len([i for (i, v) in zip(searchItrList, isSolvedList) if v])
+        )
+    )
+    print(
+        "Max Search Iterations of Successful Solve is %d"
+        % (max([i for (i, v) in zip(searchItrList, isSolvedList) if v]))
+    )

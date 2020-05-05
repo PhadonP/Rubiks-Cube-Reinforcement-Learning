@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import Dataset
 
 
-def makeTrainingData(environment, net, device, numStates, scrambleDepth):
+def makeTrainingData(environment, net, device, numStates, scrambleDepth, queue=None):
 
     states = environment.generateScrambles(numStates, scrambleDepth)
     goalStates = torch.all(states == environment.solvedState, 2)
@@ -30,7 +30,9 @@ def makeTrainingData(environment, net, device, numStates, scrambleDepth):
 
     encodedStates = environment.oneHotEncoding(states)
 
-    return encodedStates.detach(), targets.detach()
+    queue.put((encodedStates.detach(), targets.detach()))
+
+    # return encodedStates.detach(), targets.detach()
 
 
 class Puzzle15DataSet(Dataset):

@@ -6,13 +6,20 @@ from net import Net
 
 
 def batchedWeightedAStarSearch(
-    scramble, depthWeight, numParallel, env, heuristicFn, device, maxSearchItr
+    scramble,
+    depthWeight,
+    numParallel,
+    env,
+    heuristicFn,
+    device,
+    maxSearchItr,
+    queue=None,
 ):
 
     openNodes = PriorityQueue()
     closedNodes = dict()
 
-    root = Node(scramble, None, None, 0, 0, False)
+    root = Node(scramble, None, None, 0, 0, env.checkIfSolvedSingle(scramble))
     openNodes.put((root.cost, id(root), root))
     closedNodes[hash(root)] = root
 
@@ -37,6 +44,7 @@ def batchedWeightedAStarSearch(
 
             currStates = [node.state for node in currNodes]
             currStates = torch.stack(currStates)
+
             childrenStates, valChildrenStates, goalChildren = env.exploreNextStates(
                 currStates
             )
@@ -114,7 +122,9 @@ def batchedWeightedAStarSearch(
 
         moves = moves[::-1]
 
-        return moves, numNodesGenerated, searchItr, isSolved, searchTime
-
     else:
-        return None, numNodesGenerated, searchItr, isSolved, searchTime
+        moves = None
+    if queue:
+        queue.put((moves, numNodesGenerated, searchItr, isSolved, searchTime))
+    else:
+        return moves, numNodesGenerated, searchItr, isSolved, searchTime
