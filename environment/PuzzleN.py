@@ -113,10 +113,9 @@ class PuzzleN:
         return state
 
     def generateScrambles(self, numStates, scrambleRange):
-        scrambs = range(1, scrambleRange + 1)
-        states = self.solvedState.repeat(numStates, 1, 1)
 
-        scrambleNums = np.random.choice(scrambs, numStates)
+        states = self.solvedState.repeat(numStates, 1, 1)
+        scrambleNums = np.random.randint(1, scrambleRange + 1, numStates)
         numMoves = np.zeros(numStates)
 
         while np.max(numMoves < scrambleNums):
@@ -129,7 +128,7 @@ class PuzzleN:
 
             move = random.choice(list(self.actions.keys()))
             states[poses], valids, _ = self.nextState(states[poses], move)
-            numMoves[poses[valids]] = numMoves[poses[valids]] + 1
+            numMoves[poses[valids]] += 1
 
         return states
 

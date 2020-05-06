@@ -1,28 +1,36 @@
-import config
+import config.config as config
 import argparse
 import os
 
 from search.BWAS import batchedWeightedAStarSearch
 from environment.PuzzleN import PuzzleN
-from net import Net
+from networks.puzzleNet import PuzzleNet
 
 import torch
 
 if __name__ == "__main__":
 
-    conf = config.Config("ini/15puzzleinitial.ini")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-n", "--network", required=True, help="Path of Saved Network", type=str
     )
     parser.add_argument(
-        "-s", "--scrambleDepth", required=True, help="Depth of Scramble", type=int
+        "-c", "--config", required=True, help="Path of Config File", type=str
     )
     parser.add_argument(
-        "-hf", "--heuristicFunction", required=True, help="net or manhattan", type=str
+        "-s", "--scrambleDepth", default=500, help="Depth of Scramble", type=int
+    )
+    parser.add_argument(
+        "-hf", "--heuristicFunction", default="net", help="net or manhattan", type=str
+    )
+
+    parser.add_argument(
+        "-sc", "--numSolve", default=50, help="Number to Solve", type=int
     )
 
     args = parser.parse_args()
+
+    conf = config.Config(args.config)
 
     loadPath = args.network
 
@@ -33,7 +41,7 @@ if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     numGPUs = torch.cuda.device_count()
-    net = Net(conf.puzzleSize + 1)
+    net = PuzzleNet(conf.puzzleSize + 1)
 
     if numGPUs > 1:
         net = torch.nn.DataParallel(net)

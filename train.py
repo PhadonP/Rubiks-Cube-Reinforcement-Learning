@@ -1,10 +1,11 @@
 import os
 import time
-import config
+import argparse
+import config.config as config
 import torch.multiprocessing as mp
 
 from environment.PuzzleN import PuzzleN
-from net import Net
+from networks.puzzleNet import PuzzleNet
 import torch
 
 from training import trainUtils
@@ -14,7 +15,15 @@ from tensorboardX import SummaryWriter
 
 if __name__ == "__main__":
 
-    conf = config.Config("ini/15puzzleinitial.ini")
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-c", "--config", required=True, help="Path of Config File", type=str
+    )
+
+    args = parser.parse_args()
+
+    conf = config.Config(args.config)
+
     env = PuzzleN(conf.puzzleSize)
 
     name = conf.trainName()

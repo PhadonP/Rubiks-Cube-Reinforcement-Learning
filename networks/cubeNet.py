@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 
 
-class Net(nn.Module):
+class CubeNet(nn.Module):
     def __init__(self, channelsIn):
-        super(Net, self).__init__()
+        super(CubeNet, self).__init__()
 
         self.convLayers = nn.Sequential(
             nn.Conv2d(channelsIn, 100, kernel_size=2, stride=1, padding=1),

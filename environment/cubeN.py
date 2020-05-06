@@ -1,5 +1,5 @@
 import torch
-import random
+import torch.nn.functional as F
 import numpy as np
 
 
@@ -7,8 +7,22 @@ class CubeN:
     def __init__(self, N):
         assert N in [2, 3, 4, 5], "N must be valid"
         self.N = N
-        actions = ["U", "U'", "F", "F'", "L", "L'", "D", "D'", "B", "B'", "R", "R'"]
-        self.actions = {key: i for i, key in enumerate(actions)}
+        self.actionsList = [
+            "U",
+            "U'",
+            "F",
+            "F'",
+            "L",
+            "L'",
+            "D",
+            "D'",
+            "B",
+            "B'",
+            "R",
+            "R'",
+        ]
+        self.numActions = len(self.actionsList)
+        self.actions = {key: i for i, key in enumerate(self.actionsList)}
 
         self.state = self.getSolvedState()
         self.solvedState = self.getSolvedState()
@@ -23,12 +37,20 @@ class CubeN:
         return state
 
     def checkIfSolved(self, states):
-        goals = torch.all(states == self.solvedState, 3)
-        goals = goals.all(2)
-        return goals
+        return torch.all(states == self.solvedState, 2)
 
     def checkIfSolvedSingle(self, state):
         return torch.equal(state, self.solvedState)
+
+    def doAction(self, action, state=None):
+        assert action in self.actions
+
+        if state is None:
+            state = self.state
+
+        state = state[self.nextStateMat[self.actions[action]]]
+
+        return state
 
     def genNextStateMat(self):
         solvedCube = np.arange(self.N ** 2 * 6)
@@ -63,7 +85,7 @@ class CubeN:
             rotatedCube[self.adjIdx[faceToRotate]] = adjPieces
             nextStateMat[actIndex] = rotatedCube
 
-        return nextStateMat
+        return torch.tensor(nextStateMat, dtype=torch.int64)
 
     def genAdjIdx(self):
         adjIdx = np.zeros((6, 4 * self.N), dtype=int)
@@ -171,146 +193,63 @@ class CubeN:
         return adjIdx
 
     def nextState(self, states, actions):
-        stateIdxs, missingY, missingX = torch.where(states == 0)
-        missing = torch.stack((missingY, missingX), 1)
-        movingSquare = missing + torch.stack(
-            [self.actions[action] for action in actions]
+        return states.gather(
+            1, self.nextStateMat.index_select(0, torch.as_tensor(actions)),
         )
 
-        movingSquare = torch.cat((stateIdxs.unsqueeze(1), movingSquare), 1)
-        missing = torch.cat((stateIdxs.unsqueeze(1), missing), 1)
-
-        invalids = missing[
-            torch.any(
-                (movingSquare[:, 1:] >= self.rowLength) | (movingSquare[:, 1:] < 0), 1
-            )
-        ][:, 0]
-        missing = missing[
-            torch.all(
-                (movingSquare[:, 1:] < self.rowLength) & (movingSquare[:, 1:] >= 0), 1
-            )
-        ]
-        movingSquare = movingSquare[
-            torch.all(
-                (movingSquare[:, 1:] < self.rowLength) & (movingSquare[:, 1:] >= 0), 1
-            )
-        ]
-
-        stateIdxs, missingY, missingX = missing[:, 0], missing[:, 1], missing[:, 2]
-        movingSquareY, movingSquareX = movingSquare[:, 1], movingSquare[:, 2]
-
-        states[stateIdxs, missingY, missingX] = states[
-            stateIdxs, movingSquareY, movingSquareX
-        ]
-        states[stateIdxs, movingSquareY, movingSquareX] = 0
-
-        return states, stateIdxs, invalids
-
-    def doAction(self, action, state=None):
-        assert action in self.actions
-
-        if state is None:
-            state = self.state
-
-        state = state[self.nextStateMat[self.actions[action]]]
-
-        return state
-
     def generateScramble(self, noMoves):
+        scramble = np.random.randint(0, self.numActions, noMoves)
         state = self.solvedState.clone()
-        missing = [self.rowLength - 1, self.rowLength - 1]
-        scramble = []
-        movesDone = 0
 
-        while movesDone < noMoves:
-            randomMove = random.choice(list(self.actions.values()))
-            movingSquare = [sum(x) for x in zip(missing, randomMove)]
-            if self.validAction(movingSquare):
-                movesDone += 1
-                state[tuple(missing)], state[tuple(movingSquare)], = (
-                    state[tuple(movingSquare)],
-                    0,
-                )
-                missing = movingSquare
+        for move in scramble:
+            state = self.doAction(self.actionsList[move], state)
 
         return state
 
     def generateScrambles(self, numStates, scrambleRange):
-        scrambs = range(1, scrambleRange + 1)
-        states = self.solvedState.repeat(numStates, 1, 1)
 
-        scrambleNums = np.random.choice(scrambs, numStates)
+        states = self.solvedState.repeat(numStates, 1)
+        scrambleNums = np.random.randint(1, scrambleRange + 1, numStates)
         numMoves = np.zeros(numStates)
 
         while np.max(numMoves < scrambleNums):
 
             poses = np.where((numMoves < scrambleNums))[0]
 
-            subsetSize = max(len(poses) // len(self.actions), 1)
+            subsetSize = max(len(poses) // self.numActions, 1)
 
             poses = np.random.choice(poses, subsetSize)
 
-            move = random.choice(list(self.actions.keys()))
-            states[poses], valids, _ = self.nextState(states[poses], move)
-            numMoves[poses[valids]] = numMoves[poses[valids]] + 1
+            move = np.random.randint(0, self.numActions)
+            states[poses] = self.nextState(states[poses], [move] * subsetSize)
+            numMoves[poses] += 1
 
         return states
 
     def exploreNextStates(self, states):
-        nextStates = states.unsqueeze(1).repeat(1, len(self.actions), 1, 1)
-        validStates = torch.tensor([True] * len(self.actions)).repeat(
-            states.shape[0], 1
+
+        validStates = torch.tensor([True] * self.numActions).repeat(states.shape[0], 1)
+        print(1)
+        nextStates = states.repeat_interleave(self.numActions, dim=0).gather(
+            1,
+            self.nextStateMat.index_select(
+                0,
+                torch.as_tensor(
+                    np.tile(
+                        np.arange(0, self.numActions, dtype=np.int64), states.shape[0]
+                    ),
+                ),
+            ),
         )
-
-        i = 0
-        for action in self.actions:
-            nextStates[:, i, :, :], _, invalids = self.nextState(
-                nextStates[:, i, :, :], [action] * states.shape[0]
-            )
-            validStates[invalids, i] = False
-            i += 1
-
+        nextStates = nextStates.view(states.shape[0], self.numActions, -1)
+        print(nextStates)
         goals = self.checkIfSolved(nextStates)
 
         return nextStates, validStates, goals
 
     def NextStateSpotToAction(self, i):
-        if i == 0:
-            return "U"
-        elif i == 1:
-            return "R"
-        elif i == 2:
-            return "D"
-        elif i == 3:
-            return "L"
+        return self.actionsList[i]
 
     @staticmethod
     def oneHotEncoding(states):
-        rowLength = states.shape[1]
-        boardSize = states.shape[1] ** 2
-        states = states.view(-1, boardSize)
-        _, indices = states.sort(1)
-        encodedStates = torch.zeros(states.shape[0], boardSize, boardSize)
-        encodedStates = (
-            encodedStates.scatter(2, indices.unsqueeze(-1), 1)
-            .view(-1, boardSize, rowLength, rowLength)
-            .float()
-        )
-        return encodedStates
-
-
-cube3 = CubeN(3)
-
-cube3.state = cube3.doAction("U'")
-cube3.state = cube3.doAction("D'")
-cube3.state = cube3.doAction("F'")
-cube3.state = cube3.doAction("R'")
-cube3.state = cube3.doAction("B")
-cube3.state = cube3.doAction("U")
-cube3.state = cube3.doAction("R")
-cube3.state = cube3.doAction("L'")
-cube3.state = cube3.doAction("B'")
-cube3.state = cube3.doAction("L")
-
-
-print(cube3.state.reshape(6, 3, 3))
+        return F.one_hot(states.view(-1).long(), 6).view(-1, states.shape[1], 6)
