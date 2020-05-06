@@ -31,9 +31,17 @@ if __name__ == "__main__":
 
     env = PuzzleN(conf.puzzleSize)
 
-    device = torch.device(0 if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    numGPUs = torch.cuda.device_count()
+    net = Net(conf.puzzleSize + 1)
 
-    net = Net(conf.puzzleSize + 1).to(device)
+    if numGPUs > 1:
+        net = torch.nn.DataParallel(net)
+
+    print("Using %d GPU(s)" % numGPUs)
+
+    net.to(device)
+
     net.load_state_dict(torch.load(loadPath)["net_state_dict"])
     net.eval()
 

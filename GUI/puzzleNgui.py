@@ -1,10 +1,14 @@
-import pygame
 import sys
+import os
+
+sys.path.append(os.path.abspath(""))
+
+import pygame
 from pygame.locals import *
 
 import config
 import argparse
-import os
+
 import torch.multiprocessing as mp
 import time
 
@@ -91,8 +95,9 @@ class GUI:
             self.windowWidth - 125,
             self.windowHeight - 70,
         )
-
-        self.pressSolved = False
+        self.lookForSolve = False
+        self.solving = False
+        self.startSolving = False
 
     def checkForQuit(self):
         for event in pygame.event.get(QUIT):  # get all the QUIT events
@@ -106,6 +111,8 @@ class GUI:
 
     def checkInput(self):
         for event in pygame.event.get():  # event handling loop
+            if self.lookForSolve or self.solving or self.startSolving:
+                return
             if event.type == KEYUP:
                 # check if the user pressed a key to slide a tile
                 if event.key in (K_LEFT, K_a):
@@ -118,7 +125,7 @@ class GUI:
                     self.game.doAction("D")
             elif event.type == MOUSEBUTTONUP:
                 if self.solveRect.collidepoint(event.pos):
-                    self.pressSolved = True  # clicked on Solve button
+                    self.lookForSolve = True
                 elif self.scrambleRect.collidepoint(event.pos):
                     self.game.state = self.game.generateScramble(500)
 
@@ -205,30 +212,12 @@ if __name__ == "__main__":
 
     puzzleN = PuzzleN(conf.puzzleSize)
     GUI = GUI(puzzleN)
-    startSolving = False
-
     solveQueue = mp.Queue()
 
     while True:  # main game loop
         msg = "Press arrow keys to slide."  # contains the message to show in the upper left corner.
 
-        if GUI.pressSolved:
-            # (
-            #     moves,
-            #     numNodesGenerated,
-            #     searchItr,
-            #     isSolved,
-            #     solveTime,
-            # ) = batchedWeightedAStarSearch(
-            #     puzzleN.state,
-            #     conf.depthWeight,
-            #     conf.numParallel,
-            #     puzzleN,
-            #     net,
-            #     device,
-            #     conf.maxSearchItr,
-            # )
-
+        if GUI.lookForSolve:
             solveProcess = mp.Process(
                 target=batchedWeightedAStarSearch,
                 args=(
@@ -243,7 +232,8 @@ if __name__ == "__main__":
                 ),
             )
             solveProcess.start()
-            GUI.pressSolved = False
+            GUI.lookForSolve = False
+            GUI.solving = True
 
         if not solveQueue.empty():
             (
@@ -254,12 +244,14 @@ if __name__ == "__main__":
                 solveTime,
             ) = solveQueue.get()
 
+            GUI.solving = False
+
             if isSolved:
                 print("Solved!")
                 print("Moves are %s" % "".join(moves))
                 print("Solve Length is %i" % len(moves))
                 print("Time of Solve is %.3f seconds" % solveTime)
-                startSolving = True
+                GUI.startSolving = True
             else:
                 print("No Solution Found")
                 print("Search time is %.3f seconds" % solveTime)
@@ -272,23 +264,24 @@ if __name__ == "__main__":
 
         if puzzleN.checkIfSolvedSingle(puzzleN.state):
             msg = "Solved!"
-        elif startSolving:
+        elif GUI.solving:
+            msg = "Solving..."
+        elif GUI.startSolving:
             msg = "Found a %d move solution in %.2f seconds" % (len(moves), solveTime)
 
         GUI.drawGame(msg)
         GUI.checkForQuit()
+        GUI.checkInput()
 
         currTime = time.time()
 
-        if startSolving and currTime - prevTime > 0.25:
+        if GUI.startSolving and currTime - prevTime > 0.25:
             if i == len(moves):
-                startSolving = False
+                GUI.startSolving = False
             else:
                 prevTime = currTime
                 puzzleN.doAction(moves[i])
                 i += 1
-        else:
-            GUI.checkInput()
 
         pygame.display.update()
 

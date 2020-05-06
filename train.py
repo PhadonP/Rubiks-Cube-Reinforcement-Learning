@@ -22,10 +22,19 @@ if __name__ == "__main__":
     writer = SummaryWriter(comment="-" + name)
     savePath = os.path.join("saves", name) + ".pt"
 
-    device = torch.device(0 if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    numGPUs = torch.cuda.device_count()
 
-    net = Net(conf.puzzleSize + 1).to(device)
-    targetNet = Net(conf.puzzleSize + 1).to(device)
+    net = Net(conf.puzzleSize + 1)
+    targetNet = Net(conf.puzzleSize + 1)
+
+    if numGPUs > 1:
+        net = torch.nn.DataParallel(net)
+
+    print("Using %d GPU(s)" % numGPUs)
+
+    net.to(device)
+    targetNet.to(device)
 
     for targetParam, param in zip(net.parameters(), targetNet.parameters()):
         targetParam.data.copy_(param)
