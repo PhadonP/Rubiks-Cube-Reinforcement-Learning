@@ -4,7 +4,10 @@ import os
 
 from search.BWAS import batchedWeightedAStarSearch
 from environment.PuzzleN import PuzzleN
-from networks.puzzleNet import PuzzleNet
+from networks.PuzzleNet import PuzzleNet
+from environment.CubeN import PuzzleN
+from networks.CubeNet import CubeNet
+
 
 import torch
 
@@ -37,11 +40,17 @@ if __name__ == "__main__":
     if not os.path.isfile(loadPath):
         raise ValueError("No Network Saved in this Path")
 
-    env = PuzzleN(conf.puzzleSize)
+    if conf.puzzle == "puzzleN":
+        env = PuzzleN(conf.puzzleSize)
+        net = PuzzleNet(conf.puzzleSize)
+    elif conf.puzzle == "cubeN":
+        env = CubeN(conf.puzzleSize)
+        net = CubeNet(conf.puzzleSize)
+    else:
+        raise ValueError("Invalid Puzzle")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     numGPUs = torch.cuda.device_count()
-    net = PuzzleNet(conf.puzzleSize + 1)
 
     if numGPUs > 1:
         net = torch.nn.DataParallel(net)

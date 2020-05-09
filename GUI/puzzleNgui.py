@@ -6,7 +6,7 @@ sys.path.append(os.path.abspath(""))
 import pygame
 from pygame.locals import *
 
-import config
+from config.config import Config
 import argparse
 
 import torch.multiprocessing as mp
@@ -15,7 +15,7 @@ import time
 import torch
 from environment.PuzzleN import PuzzleN
 from search.BWAS import batchedWeightedAStarSearch
-from net import Net
+from networks.PuzzleNet import PuzzleNet
 
 
 class GUI:
@@ -191,7 +191,7 @@ class GUI:
 
 if __name__ == "__main__":
 
-    conf = config.Config("ini/15puzzleinitial.ini")
+    conf = Config("config/puzzle15.ini")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-n", "--network", required=True, help="Path of Saved Network", type=str
@@ -206,7 +206,7 @@ if __name__ == "__main__":
 
     device = torch.device(0 if torch.cuda.is_available() else "cpu")
 
-    net = Net(conf.puzzleSize + 1).to(device)
+    net = PuzzleNet(conf.puzzleSize).to(device)
     net.load_state_dict(torch.load(loadPath)["net_state_dict"])
     net.eval()
 

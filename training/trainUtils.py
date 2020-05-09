@@ -3,10 +3,9 @@ from torch.utils.data import Dataset
 
 
 def makeTrainingData(environment, net, device, numStates, scrambleDepth, queue=None):
-
     states = environment.generateScrambles(numStates, scrambleDepth)
-    goalStates = torch.all(states == environment.solvedState, 2)
-    goalStates = goalStates.all(1)
+
+    goalStates = environment.checkIfSolved(states)
 
     exploredStates, validNextStates, goalNextStates = environment.exploreNextStates(
         states
@@ -19,9 +18,9 @@ def makeTrainingData(environment, net, device, numStates, scrambleDepth, queue=N
 
     MovesToGo = net(validExploredStatesOneHot)
 
-    targets = torch.zeros(exploredStates.shape[:2])
+    targets = torch.zeros(exploredStates.shape[:2]).to(device)
     targets[validNextStates & ~goalNextStates] = MovesToGo
-    targets[goalNextStates] = 0
+    # targets[goalNextStates] = 0
     targets[~validNextStates] = float("inf")
 
     targets = targets.min(1).values + 1

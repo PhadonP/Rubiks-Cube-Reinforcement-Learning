@@ -5,13 +5,13 @@ import config.config as config
 import torch.multiprocessing as mp
 
 from environment.PuzzleN import PuzzleN
-from networks.puzzleNet import PuzzleNet
-import torch
+from environment.CubeN import CubeN
+from networks.PuzzleNet import PuzzleNet
+from networks.CubeNet import CubeNet
 
 from training import trainUtils
 import torch
-
-from tensorboardX import SummaryWriter
+from torch.optim.lr_scheduler import StepLR
 
 if __name__ == "__main__":
 
@@ -19,39 +19,50 @@ if __name__ == "__main__":
     parser.add_argument(
         "-c", "--config", required=True, help="Path of Config File", type=str
     )
+    parser.add_argument("-n", "--name", default=None, help="Name of Save", type=str)
 
     args = parser.parse_args()
 
     conf = config.Config(args.config)
 
-    env = PuzzleN(conf.puzzleSize)
+    if conf.puzzle == "puzzleN":
+        env = PuzzleN(conf.puzzleSize)
+        net = PuzzleNet(conf.puzzleSize)
+        targetNet = PuzzleNet(conf.puzzleSize)
+    elif conf.puzzle == "cubeN":
+        env = CubeN(conf.puzzleSize)
+        net = CubeNet(conf.puzzleSize)
+        targetNet = CubeNet(conf.puzzleSize)
+    else:
+        raise ValueError("Invalid Puzzle")
 
-    name = conf.trainName()
+    name = conf.trainName(args.name)
 
-    writer = SummaryWriter(comment="-" + name)
     savePath = os.path.join("saves", name) + ".pt"
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     numGPUs = torch.cuda.device_count()
+    numProcs = conf.numProcs
 
-    net = Net(conf.puzzleSize + 1)
-    targetNet = Net(conf.puzzleSize + 1)
+    print("Using %d GPU(s)" % numGPUs)
 
     if numGPUs > 1:
         net = torch.nn.DataParallel(net)
 
-    print("Using %d GPU(s)" % numGPUs)
-
     net.to(device)
     targetNet.to(device)
+
+    mp.set_start_method("spawn")
+    targetNet.share_memory()
 
     for targetParam, param in zip(net.parameters(), targetNet.parameters()):
         targetParam.data.copy_(param)
 
     numWorkers = conf.numWorkers
-    numProcs = conf.numProcs
 
     optimizer = torch.optim.Adam(net.parameters(), lr=conf.lr)
+    scheduler = StepLR(optimizer, step_size=1, gamma=conf.lrDecay)
+
     numEpochs = conf.numEpochs
     tau = conf.tau
 
@@ -119,10 +130,16 @@ if __name__ == "__main__":
             net, device, trainLoader, optimizer, lossLogger
         )
 
+        scheduler.step()
+
         for targetParam, param in zip(targetNet.parameters(), net.parameters()):
             targetParam.data.copy_(tau * param + (1 - tau) * targetParam)
 
         print("Epoch: %d/%d" % (epoch, numEpochs))
+
+        epochTime = time.time()
+
+        print("Epoch time: %.3f seconds" % (epochTime - startGenTime))
 
         if epoch % 10 == 0:
             print("Saving Model")

@@ -1,6 +1,7 @@
 import torch
 import random
 import numpy as np
+import time
 
 
 class PuzzleN:
@@ -29,8 +30,8 @@ class PuzzleN:
         return torch.tensor(state, dtype=torch.uint8)
 
     def checkIfSolved(self, states):
-        goals = torch.all(states == self.solvedState, 3)
-        goals = goals.all(2)
+        goals = torch.all(states == self.solvedState, 2)
+        goals = goals.all(1)
         return goals
 
     def checkIfSolvedSingle(self, state):
@@ -128,7 +129,7 @@ class PuzzleN:
 
             move = random.choice(list(self.actions.keys()))
             states[poses], valids, _ = self.nextState(states[poses], move)
-            numMoves[poses[valids]] += 1
+            numMoves[poses[valids.cpu()]] += 1
 
         return states
 
@@ -146,7 +147,9 @@ class PuzzleN:
             validStates[invalids, i] = False
             i += 1
 
-        goals = self.checkIfSolved(nextStates)
+        goals = self.checkIfSolved(
+            nextStates.view(-1, self.rowLength, self.rowLength)
+        ).view(-1, len(self.actions))
 
         return nextStates, validStates, goals
 
@@ -169,9 +172,10 @@ class PuzzleN:
         encodedStates = torch.zeros(states.shape[0], boardSize, boardSize)
         encodedStates = (
             encodedStates.scatter(2, indices.unsqueeze(-1), 1)
-            .view(-1, boardSize, rowLength, rowLength)
+            .flatten(start_dim=1)
             .float()
         )
+
         return encodedStates
 
     def generateManDistMat(self):

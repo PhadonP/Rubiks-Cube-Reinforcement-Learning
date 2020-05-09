@@ -2,7 +2,8 @@ import time
 import torch
 from queue import PriorityQueue
 from search.node import Node
-from net import Net
+from networks.PuzzleNet import PuzzleNet
+from networks.CubeNet import CubeNet
 
 
 def batchedWeightedAStarSearch(
@@ -89,7 +90,7 @@ def batchedWeightedAStarSearch(
 
             childrenStates = childrenStates[valChildrenStates][nodesToAddIdx].to(device)
 
-            if isinstance(heuristicFn, Net):
+            if isinstance(heuristicFn, PuzzleNet) or isinstance(heuristicFn, CubeNet):
                 childrenStates = env.oneHotEncoding(childrenStates)
 
             hValue = heuristicFn(childrenStates)

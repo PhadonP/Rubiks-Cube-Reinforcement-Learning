@@ -37,7 +37,7 @@ class CubeN:
         return state
 
     def checkIfSolved(self, states):
-        return torch.all(states == self.solvedState, 2)
+        return torch.all(states == self.solvedState, 1)
 
     def checkIfSolvedSingle(self, state):
         return torch.equal(state, self.solvedState)
@@ -192,7 +192,9 @@ class CubeN:
 
         return adjIdx
 
-    def nextState(self, states, actions):
+    def nextState(
+        self, states, actions,
+    ):
         return states.gather(
             1, self.nextStateMat.index_select(0, torch.as_tensor(actions)),
         )
@@ -229,21 +231,24 @@ class CubeN:
     def exploreNextStates(self, states):
 
         validStates = torch.tensor([True] * self.numActions).repeat(states.shape[0], 1)
-        print(1)
+
         nextStates = states.repeat_interleave(self.numActions, dim=0).gather(
             1,
             self.nextStateMat.index_select(
                 0,
                 torch.as_tensor(
                     np.tile(
-                        np.arange(0, self.numActions, dtype=np.int64), states.shape[0]
+                        np.arange(0, self.numActions, dtype=np.int64), states.shape[0],
                     ),
                 ),
             ),
         )
+
         nextStates = nextStates.view(states.shape[0], self.numActions, -1)
-        print(nextStates)
-        goals = self.checkIfSolved(nextStates)
+
+        goals = self.checkIfSolved(nextStates.view(-1, self.N ** 2 * 6)).view(
+            -1, self.numActions
+        )
 
         return nextStates, validStates, goals
 

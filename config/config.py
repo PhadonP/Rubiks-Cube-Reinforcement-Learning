@@ -22,6 +22,10 @@ class Config:
         return self.data["solve"]
 
     @property
+    def puzzle(self):
+        return self.general["puzzle"]
+
+    @property
     def puzzleSize(self):
         return self.general.getint("puzzleSize")
 
@@ -54,6 +58,10 @@ class Config:
         return self.train.getfloat("lr")
 
     @property
+    def lrDecay(self):
+        return self.train.getfloat("lrDecay")
+
+    @property
     def tau(self):
         return self.train.getfloat("tau")
 
@@ -70,7 +78,11 @@ class Config:
         return self.solve.getint("maxSearchItr")
 
     def trainName(self, suffix=None):
-        name = "Puzzle-%d,ScrambleDepth=%d" % (self.puzzleSize, self.scrambleDepth)
+        name = "%s-%d,ScrambleDepth=%d" % (
+            self.puzzle.capitalize(),
+            self.puzzleSize,
+            self.scrambleDepth,
+        )
         if suffix:
             name += "," + suffix
         return name
