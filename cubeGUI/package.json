@@ -1,0 +1,15 @@
+{
+  "name": "rubikscube",
+  "version": "1.0.0",
+  "description": "Rubik's Cube Neural Network Solver",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Phadon Phipat",
+  "license": "ISC",
+  "dependencies": {
+    "three": "^0.116.1",
+    "tween": "^0.9.0"
+  }
+}

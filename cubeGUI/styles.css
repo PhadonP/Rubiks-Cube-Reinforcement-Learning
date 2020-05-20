@@ -1,0 +1,160 @@
+* {
+  box-sizing: border-box;
+  font-family: "Roboto", sans-serif;
+}
+body {
+  margin: 0;
+}
+canvas {
+  width: 100%;
+  height: 100%;
+}
+.container {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  right: 15%;
+  width: 30%;
+  justify-content: center;
+  align-items: flex-end;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.buttonContainer {
+  display: flex;
+  min-width: 130%;
+  flex-flow: wrap;
+  justify-content: flex-end;
+}
+h1 {
+  font-size: 30pt;
+  color: #363636;
+  text-align: right;
+}
+
+p {
+  text-align: right;
+  font-size: 12pt;
+  min-height: 15pt;
+}
+
+button:disabled {
+  opacity: 0.7;
+}
+
+button:focus {
+  outline: none;
+}
+
+.containerButton {
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 11px 24px;
+  text-decoration: none;
+  margin: 5px;
+  min-width: 150px;
+}
+
+.containerButton {
+  position: relative;
+  top: 1px;
+}
+
+#scramble {
+  box-shadow: inset 0px 1px 0px 0px #f5978e;
+  background-color: #f24537;
+  border: 1px solid #d02718;
+  color: #ffffff;
+  text-shadow: 0px 1px 0px #810e05;
+}
+#scramble:hover:enabled {
+  background-color: #c62d1f;
+}
+
+#solve {
+  box-shadow: inset 0px 1px 0px 0px #a4e271;
+  background-color: #89c403;
+  border: 1px solid #74b807;
+  color: #ffffff;
+  text-shadow: 0px 1px 0px #528009;
+}
+#solve:hover:enabled {
+  background-color: #77a809;
+}
+
+#solve {
+  box-shadow: inset 0px 1px 0px 0px #a4e271;
+  background-color: #89c403;
+  border: 1px solid #74b807;
+  color: #ffffff;
+  text-shadow: 0px 1px 0px #528009;
+}
+#solve:hover:enabled {
+  background-color: #77a809;
+}
+
+#switchPuzzle {
+  box-shadow: inset 0px 1px 0px 0px #e6e9eb;
+  background-color: #4da6ff;
+  border: 1px solid #337bc4;
+  color: #ffffff;
+  text-shadow: 0px 1px 0px #528ecc;
+}
+#switchPuzzle:hover:enabled {
+  background-color: #378de5;
+}
+
+.buttonContainer2 {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.container2Button {
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 11px 24px;
+  text-decoration: none;
+  margin: 5px;
+  min-width: 80px;
+  box-shadow: inset 0px 1px 0px 0px #eeeeee;
+  background-color: #d1d1d1;
+  border: 1px solid #9c9c9c;
+  color: #808080;
+  text-shadow: 0px 1px 0px #181818;
+}
+
+.container2Button {
+  position: relative;
+  top: 1px;
+}
+
+.container2Button:hover:enabled {
+  background-color: #bbbbbb;
+}
+
+.container2Button:disabled {
+  opacity: 0.3;
+}
+.fa-github {
+  position: absolute;
+  right: 3%;
+  bottom: 3%;
+  padding: 20px;
+  font-size: 50px;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 50%;
+  color: #747474;
+}
+
+.fa-github:hover {
+  color: #525252;
+}
+.fa-github:active {
+  color: #2b2b2b;
+}

@@ -34,8 +34,8 @@ class Config:
         return self.general.getint("numWorkers")
 
     @property
-    def numProcs(self):
-        return self.general.getint("numProcs")
+    def networkType(self):
+        return self.general["networkType"]
 
     @property
     def numberOfScrambles(self):
@@ -62,8 +62,24 @@ class Config:
         return self.train.getfloat("lrDecay")
 
     @property
-    def tau(self):
-        return self.train.getfloat("tau")
+    def weightDecay(self):
+        return self.train.getfloat("weightDecay")
+
+    @property
+    def checkEpoch(self):
+        return self.train.getint("checkEpoch")
+
+    @property
+    def lossThreshold(self):
+        return self.train.getfloat("lossThreshold")
+
+    @property
+    def numTestScrambles(self):
+        return self.train.getint("numTestScrambles")
+
+    @property
+    def testScrambleDepth(self):
+        return self.train.getint("testScrambleDepth")
 
     @property
     def depthWeight(self):
@@ -78,10 +94,13 @@ class Config:
         return self.solve.getint("maxSearchItr")
 
     def trainName(self, suffix=None):
-        name = "%s-%d,ScrambleDepth=%d" % (
-            self.puzzle.capitalize(),
+        name = "%s-%d,ScrambleDepth-%d,Epochs-%d,lr-%f,%s" % (
+            self.puzzle.capitalize()[:-1],
             self.puzzleSize,
             self.scrambleDepth,
+            self.numEpochs,
+            self.lr,
+            self.networkType
         )
         if suffix:
             name += "," + suffix

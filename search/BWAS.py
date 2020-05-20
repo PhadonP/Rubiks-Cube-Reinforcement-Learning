@@ -1,9 +1,8 @@
 import time
 import torch
-from queue import PriorityQueue
+from heapq import heappop, heappush
 from search.node import Node
-from networks.PuzzleNet import PuzzleNet
-from networks.CubeNet import CubeNet
+import inspect
 
 
 def batchedWeightedAStarSearch(
@@ -14,14 +13,15 @@ def batchedWeightedAStarSearch(
     heuristicFn,
     device,
     maxSearchItr,
-    queue=None,
+    verbose=True,
+    queue=False
 ):
 
-    openNodes = PriorityQueue()
+    openNodes = []
     closedNodes = dict()
 
     root = Node(scramble, None, None, 0, 0, env.checkIfSolvedSingle(scramble))
-    openNodes.put((root.cost, id(root), root))
+    heappush(openNodes, (root.cost, id(root), root))
     closedNodes[hash(root)] = root
 
     searchItr = 1
@@ -33,11 +33,13 @@ def batchedWeightedAStarSearch(
     with torch.no_grad():
         while not isSolved and searchItr <= maxSearchItr:
 
-            numGet = min(openNodes.qsize(), numParallel)
+            startIterTime = time.time()
+
+            numGet = min(len(openNodes), numParallel)
             currNodes = []
 
             for _ in range(numGet):
-                node = openNodes.get()[2]
+                node = heappop(openNodes)[2]
                 currNodes.append(node)
                 if node.isSolved:
                     isSolved = True
@@ -86,26 +88,28 @@ def batchedWeightedAStarSearch(
                     nodesToAddIdx.append(i)
 
             children = [children[i] for i in nodesToAddIdx]
-            depths = torch.tensor([depths[i] for i in nodesToAddIdx]).to(device)
+            depths = torch.tensor([depths[i]
+                                   for i in nodesToAddIdx])
 
-            childrenStates = childrenStates[valChildrenStates][nodesToAddIdx].to(device)
+            childrenStates = childrenStates[valChildrenStates][nodesToAddIdx]
 
-            if isinstance(heuristicFn, PuzzleNet) or isinstance(heuristicFn, CubeNet):
-                childrenStates = env.oneHotEncoding(childrenStates)
+            if not inspect.ismethod(heuristicFn):
+                childrenStates = env.oneHotEncoding(childrenStates).to(device)
 
-            hValue = heuristicFn(childrenStates)
+            hValue = heuristicFn(childrenStates).cpu()
 
             bestHValue = min(hValue)
             costs = hValue + depthWeight * depths
 
-            for i in range(len(children)):
-                children[i].cost = costs[i]
-                openNodes.put((children[i].cost, id(children[i]), children[i]))
+            for cost, child in zip(costs, children):
+                child.cost = cost
+                heappush(
+                    openNodes, (child.cost, id(child), child))
 
             numNodesGenerated += len(children)
-
-            print("Search Itr: %i" % searchItr)
-            print("Best Heuristic Function Value: %.2f" % bestHValue)
+            if verbose:
+                print("Search Itr: %i | Best H Value: %.2f | Iteration Time: %.2f seconds" % (
+                    searchItr, bestHValue, time.time() - startIterTime), flush=True)
 
             searchItr += 1
 
@@ -114,7 +118,6 @@ def batchedWeightedAStarSearch(
     if isSolved:
 
         moves = []
-
         node = solvedNode
 
         while node.depth > 0:
@@ -125,6 +128,7 @@ def batchedWeightedAStarSearch(
 
     else:
         moves = None
+
     if queue:
         queue.put((moves, numNodesGenerated, searchItr, isSolved, searchTime))
     else:

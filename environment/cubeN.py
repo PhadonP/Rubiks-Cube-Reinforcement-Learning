@@ -32,7 +32,7 @@ class CubeN:
     def getSolvedState(self):
         state = torch.zeros(self.N ** 2 * 6, dtype=torch.uint8)
         for i in range(6):
-            state[self.N ** 2 * i : self.N ** 2 * (i + 1)] = i
+            state[self.N ** 2 * i: self.N ** 2 * (i + 1)] = i
 
         return state
 
@@ -79,7 +79,7 @@ class CubeN:
                 adjPieces = np.roll(adjPieces, -self.N)
 
             rotatedCube[
-                faceToRotate * self.N ** 2 : (faceToRotate + 1) * self.N ** 2
+                faceToRotate * self.N ** 2: (faceToRotate + 1) * self.N ** 2
             ] = rotatedFace.flatten()
 
             rotatedCube[self.adjIdx[faceToRotate]] = adjPieces
@@ -141,7 +141,8 @@ class CubeN:
 
             if i == 3:  # D
                 # B L F R
-                positionsRow = positionsRow = np.ones(4 * self.N) * (self.N - 1)
+                positionsRow = positionsRow = np.ones(
+                    4 * self.N) * (self.N - 1)
                 positionsCol = positionsCol = np.tile(np.arange(self.N), 4)
 
             if i == 4:  # B
@@ -185,7 +186,8 @@ class CubeN:
             positionsCol = positionsCol.flatten()
 
             multiIdx = np.stack(
-                (faces.astype(int), positionsRow.astype(int), positionsCol.astype(int))
+                (faces.astype(int), positionsRow.astype(
+                    int), positionsCol.astype(int))
             )
 
             adjIdx[i] = np.ravel_multi_index(multiIdx, (6, self.N, self.N))
@@ -211,7 +213,7 @@ class CubeN:
     def generateScrambles(self, numStates, scrambleRange):
 
         states = self.solvedState.repeat(numStates, 1)
-        scrambleNums = np.random.randint(1, scrambleRange + 1, numStates)
+        scrambleNums = np.random.randint(0, scrambleRange + 1, numStates)
         numMoves = np.zeros(numStates)
 
         while np.max(numMoves < scrambleNums):
@@ -230,7 +232,8 @@ class CubeN:
 
     def exploreNextStates(self, states):
 
-        validStates = torch.tensor([True] * self.numActions).repeat(states.shape[0], 1)
+        validStates = torch.tensor(
+            [True] * self.numActions).repeat(states.shape[0], 1)
 
         nextStates = states.repeat_interleave(self.numActions, dim=0).gather(
             1,
@@ -238,7 +241,8 @@ class CubeN:
                 0,
                 torch.as_tensor(
                     np.tile(
-                        np.arange(0, self.numActions, dtype=np.int64), states.shape[0],
+                        np.arange(0, self.numActions,
+                                  dtype=np.int64), states.shape[0],
                     ),
                 ),
             ),
@@ -257,4 +261,4 @@ class CubeN:
 
     @staticmethod
     def oneHotEncoding(states):
-        return F.one_hot(states.view(-1).long(), 6).view(-1, states.shape[1], 6)
+        return F.one_hot(states.view(-1).long(), 6).view(-1, states.shape[1]*6)

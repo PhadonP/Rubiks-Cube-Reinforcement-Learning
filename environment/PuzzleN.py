@@ -24,7 +24,8 @@ class PuzzleN:
     def getSolvedState(self):
         state = []
         for i in range(self.rowLength):
-            state.append([n + self.rowLength * i for n in range(1, self.rowLength + 1)])
+            state.append(
+                [n + self.rowLength * i for n in range(1, self.rowLength + 1)])
         state[-1][-1] = 0
 
         return torch.tensor(state, dtype=torch.uint8)
@@ -49,21 +50,25 @@ class PuzzleN:
 
         invalids = missing[
             torch.any(
-                (movingSquare[:, 1:] >= self.rowLength) | (movingSquare[:, 1:] < 0), 1
+                (movingSquare[:, 1:] >= self.rowLength) | (
+                    movingSquare[:, 1:] < 0), 1
             )
         ][:, 0]
         missing = missing[
             torch.all(
-                (movingSquare[:, 1:] < self.rowLength) & (movingSquare[:, 1:] >= 0), 1
+                (movingSquare[:, 1:] < self.rowLength) & (
+                    movingSquare[:, 1:] >= 0), 1
             )
         ]
         movingSquare = movingSquare[
             torch.all(
-                (movingSquare[:, 1:] < self.rowLength) & (movingSquare[:, 1:] >= 0), 1
+                (movingSquare[:, 1:] < self.rowLength) & (
+                    movingSquare[:, 1:] >= 0), 1
             )
         ]
 
-        stateIdxs, missingY, missingX = missing[:, 0], missing[:, 1], missing[:, 2]
+        stateIdxs, missingY, missingX = missing[:,
+                                                0], missing[:, 1], missing[:, 2]
         movingSquareY, movingSquareX = movingSquare[:, 1], movingSquare[:, 2]
 
         states[stateIdxs, missingY, missingX] = states[
@@ -116,7 +121,7 @@ class PuzzleN:
     def generateScrambles(self, numStates, scrambleRange):
 
         states = self.solvedState.repeat(numStates, 1, 1)
-        scrambleNums = np.random.randint(1, scrambleRange + 1, numStates)
+        scrambleNums = np.random.randint(0, scrambleRange + 1, numStates)
         numMoves = np.zeros(numStates)
 
         while np.max(numMoves < scrambleNums):
@@ -211,5 +216,6 @@ class PuzzleN:
         states = states.flatten(start_dim=1)
 
         for i, state in enumerate(states):
-            distance[i] = sum(self.manDistMat.gather(1, state.unsqueeze(-1).long()))
+            distance[i] = sum(self.manDistMat.gather(
+                1, state.unsqueeze(-1).long()))
         return distance

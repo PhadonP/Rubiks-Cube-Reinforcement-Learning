@@ -1,0 +1,62 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+
+    <link rel="stylesheet" href="styles.css" />
+    <title>Rubik's Cube Neural Network Solver</title>
+  </head>
+  <body>
+    <script src="./index.js" type="module"></script>
+    <div class="container">
+      <h1>Rubik's Cube Solver</h1>
+      <p>
+        This solver uses reinforcement learning and A* search to solve the cube.
+      </p>
+      <div class="buttonContainer">
+        <button type="button" class="containerButton" id="switchPuzzle">
+          2x2
+        </button>
+        <button type="button" class="containerButton" id="scramble">
+          Scramble
+        </button>
+        <button type="button" class="containerButton" id="solve">
+          Solve!
+        </button>
+      </div>
+      <div class="buttonContainer2">
+        <button type="button" class="container2Button" id="rewind" disabled>
+          &lt;&lt;
+        </button>
+        <button type="button" class="container2Button" id="back" disabled>
+          &lt;
+        </button>
+        <button type="button" class="container2Button" id="forward" disabled>
+          >
+        </button>
+        <button
+          type="button"
+          class="container2Button"
+          id="fastForward"
+          disabled
+        >
+          >>
+        </button>
+      </div>
+      <p id="solveMessage"></p>
+      <p id="solveSteps"></p>
+    </div>
+    <a
+      href="https://github.com/PhadonP/15-Puzzle-Reinforcement-Learning"
+      class="fa fa-github"
+    ></a>
+  </body>
+</html>

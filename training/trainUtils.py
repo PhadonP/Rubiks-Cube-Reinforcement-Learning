@@ -1,8 +1,35 @@
 import torch
 from torch.utils.data import Dataset
+import time
+from search.BWAS import batchedWeightedAStarSearch
+import pandas as pd
+import numpy as np
 
 
-def makeTrainingData(environment, net, device, numStates, scrambleDepth, queue=None):
+def makeTrainingData(environment, preparedData, net, device):
+
+    goalStates, exploredStates, validNextStates, goalNextStates = preparedData
+
+    validExploredStates = exploredStates[validNextStates & ~goalNextStates]
+    validExploredStatesOneHot = environment.oneHotEncoding(
+        validExploredStates).to(device)
+
+    MovesToGo = net(validExploredStatesOneHot)
+
+    targets = torch.zeros(exploredStates.shape[:2])
+    targets[validNextStates & ~goalNextStates] = MovesToGo.cpu()
+    targets[goalNextStates] = 0
+    targets[~validNextStates] = float("inf")
+
+    targets = targets.min(1).values + 1
+
+    targets[goalStates] = 0
+
+    return targets.detach()
+
+
+def prepareTrainingData(environment, numStates, scrambleDepth):
+
     states = environment.generateScrambles(numStates, scrambleDepth)
 
     goalStates = environment.checkIfSolved(states)
@@ -11,27 +38,9 @@ def makeTrainingData(environment, net, device, numStates, scrambleDepth, queue=N
         states
     )
 
-    validExploredStates = exploredStates[validNextStates & ~goalNextStates]
-    validExploredStatesOneHot = environment.oneHotEncoding(validExploredStates).to(
-        device
-    )
-
-    MovesToGo = net(validExploredStatesOneHot)
-
-    targets = torch.zeros(exploredStates.shape[:2]).to(device)
-    targets[validNextStates & ~goalNextStates] = MovesToGo
-    # targets[goalNextStates] = 0
-    targets[~validNextStates] = float("inf")
-
-    targets = targets.min(1).values + 1
-
-    targets[goalStates] = 0
-
     encodedStates = environment.oneHotEncoding(states)
 
-    queue.put((encodedStates.detach(), targets.detach()))
-
-    # return encodedStates.detach(), targets.detach()
+    return encodedStates.detach(), [goalStates, exploredStates, validNextStates, goalNextStates]
 
 
 class Puzzle15DataSet(Dataset):
@@ -46,10 +55,12 @@ class Puzzle15DataSet(Dataset):
         return self.data[idx], self.labels[idx]
 
 
-def train(net, device, loader, optimizer, lossLogger):
+def train(net, device, loader, optimizer):
 
     net.train()
-    epochLoss = 0
+    lossLogger = []
+    normLogger = []
+    valueLogger = []
 
     for i, (x, y) in enumerate(loader):
 
@@ -63,14 +74,74 @@ def train(net, device, loader, optimizer, lossLogger):
         loss.backward()
         optimizer.step()
 
-        epochLoss += loss.item()
-
         lossLogger.append(loss.item())
 
+        totalNorm = 0
+        for p in net.parameters():
+            paramNorm = p.grad.data.norm(2)
+            totalNorm += paramNorm.item() ** 2
+        totalNorm = totalNorm ** (1. / 2)
+
+        normLogger.append(totalNorm)
+
+        avgValue = torch.mean(fx).item()
+        valueLogger.append(avgValue)
+
         print(
-            "TRAINING: | Iteration [%d/%d] | Loss %.2f |"
-            % (i + 1, len(loader), loss.item())
+            "TRAINING: | Iteration [%d/%d] | Loss %.2f | Norm %.3f | Average Value %.3f"
+            % (i + 1, len(loader), loss.item(), totalNorm, avgValue)
         )
 
-    # return the average loss from the epoch as well as the logger array
-    return epochLoss / len(loader), lossLogger
+    meanLoss = sum(lossLogger) / len(lossLogger)
+    meanNorm = sum(normLogger) / len(normLogger)
+    meanValue = sum(valueLogger) / len(valueLogger)
+    return meanLoss, meanNorm, meanValue
+
+
+def test(epoch, env, net, device, config, filePath, verbose):
+
+    torch.set_num_threads(1)
+
+    net.to(device)
+    net.eval()
+
+    numScrambles = config.numTestScrambles
+    maxScrambleDepth = config.testScrambleDepth
+
+    columns = ["Epoch", "Scramble Depth", "Time", "isSolved",
+               "Move Count", "Nodes Generated", "Search Iterations"]
+    df = pd.DataFrame(columns=columns)
+
+    for i in range(numScrambles):
+
+        scrambleDepth = ((i + 1) * (maxScrambleDepth - 2)) // numScrambles + 2
+        scramble = env.generateScramble(scrambleDepth)
+
+        (
+            moves,
+            numNodesGenerated,
+            searchItr,
+            isSolved,
+            solveTime,
+        ) = batchedWeightedAStarSearch(
+            scramble,
+            config.depthWeight,
+            config.numParallel,
+            env,
+            net,
+            device,
+            config.maxSearchItr,
+            verbose
+        )
+
+        if isSolved:
+            row = [epoch, scrambleDepth, solveTime, isSolved,
+                   len(moves), numNodesGenerated, searchItr]
+        else:
+            row = [epoch, scrambleDepth, solveTime, isSolved,
+                   np.nan, numNodesGenerated, searchItr]
+
+        df.loc[len(df)] = row
+
+    with open(filePath, 'a') as f:
+        df.to_csv(f, header=f.tell() == 0, index=False)

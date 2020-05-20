@@ -1,4 +1,5 @@
 # 15-Puzzle-Reinforcement-Learning
+
 Solving a 15 Puzzle using Deep Reinforcement Learning and Search.
 
 This project is an implementation of the following paper http://deepcube.igb.uci.edu/static/files/SolvingTheRubiksCubeWithDeepReinforcementLearningAndSearch_Final.pdf.

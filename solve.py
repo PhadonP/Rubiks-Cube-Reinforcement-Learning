@@ -3,11 +3,8 @@ import argparse
 import os
 
 from search.BWAS import batchedWeightedAStarSearch
-from environment.PuzzleN import PuzzleN
-from networks.PuzzleNet import PuzzleNet
-from environment.CubeN import PuzzleN
-from networks.CubeNet import CubeNet
-
+from environment.getEnvironment import getEnvironment
+from networks.getNetwork import getNetwork
 
 import torch
 
@@ -21,14 +18,14 @@ if __name__ == "__main__":
         "-c", "--config", required=True, help="Path of Config File", type=str
     )
     parser.add_argument(
-        "-s", "--scrambleDepth", default=500, help="Depth of Scramble", type=int
+        "-s", "--scrambleDepth", default=300, help="Depth of Scramble", type=int
     )
     parser.add_argument(
         "-hf", "--heuristicFunction", default="net", help="net or manhattan", type=str
     )
 
     parser.add_argument(
-        "-sc", "--numSolve", default=50, help="Number to Solve", type=int
+        "-sc", "--numSolve", default=100, help="Number to Solve", type=int
     )
 
     args = parser.parse_args()
@@ -40,31 +37,19 @@ if __name__ == "__main__":
     if not os.path.isfile(loadPath):
         raise ValueError("No Network Saved in this Path")
 
-    if conf.puzzle == "puzzleN":
-        env = PuzzleN(conf.puzzleSize)
-        net = PuzzleNet(conf.puzzleSize)
-    elif conf.puzzle == "cubeN":
-        env = CubeN(conf.puzzleSize)
-        net = CubeNet(conf.puzzleSize)
-    else:
-        raise ValueError("Invalid Puzzle")
+    env = getEnvironment(conf.puzzle)(conf.puzzleSize)
+    net = getNetwork(conf.puzzle, conf.networkType)(conf.puzzleSize)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    numGPUs = torch.cuda.device_count()
-
-    if numGPUs > 1:
-        net = torch.nn.DataParallel(net)
-
-    print("Using %d GPU(s)" % numGPUs)
 
     net.to(device)
 
-    net.load_state_dict(torch.load(loadPath)["net_state_dict"])
+    net.load_state_dict(torch.load(loadPath))  # ["net_state_dict"])
     net.eval()
 
     if args.heuristicFunction == "net":
         heuristicFn = net
-    elif args.heuristicFunction == "manhattan":
+    elif args.heuristicFunction == "manhattan" and conf.puzzle == "puzzleN":
         heuristicFn = env.manhattanDistance
     else:
         raise ValueError("Invalid Heuristic Function")
@@ -75,7 +60,8 @@ if __name__ == "__main__":
     isSolvedList = []
     timeList = []
 
-    numToSolve = 3
+    numToSolve = args.numSolve
+
     for i in range(1, numToSolve + 1):
 
         scramble = env.generateScramble(args.scrambleDepth)
@@ -118,7 +104,7 @@ if __name__ == "__main__":
             print("%i Nodes were generated" % numNodesGenerated)
             print("Search time was %.3f seconds" % time)
 
-        print("%d out of %d" % (i, numToSolve))
+        print("%d out of %d" % (i, numToSolve), flush=True)
 
     print("Average Move Count %.2f" % (sum(movesList) / len(movesList)))
     print(

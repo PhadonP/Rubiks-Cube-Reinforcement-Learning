@@ -3,7 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 .vscode/
-
+saves/
+runs/
+cubeGUI/node_modules/
 # C extensions
 *.so
 
