@@ -59,7 +59,6 @@ def train(net, device, loader, optimizer):
 
     net.train()
     lossLogger = []
-    normLogger = []
     valueLogger = []
 
     for i, (x, y) in enumerate(loader):
@@ -76,26 +75,17 @@ def train(net, device, loader, optimizer):
 
         lossLogger.append(loss.item())
 
-        totalNorm = 0
-        for p in net.parameters():
-            paramNorm = p.grad.data.norm(2)
-            totalNorm += paramNorm.item() ** 2
-        totalNorm = totalNorm ** (1. / 2)
-
-        normLogger.append(totalNorm)
-
         avgValue = torch.mean(fx).item()
         valueLogger.append(avgValue)
 
         print(
-            "TRAINING: | Iteration [%d/%d] | Loss %.2f | Norm %.3f | Average Value %.3f"
-            % (i + 1, len(loader), loss.item(), totalNorm, avgValue)
+            "TRAINING: | Iteration [%d/%d] | Loss %.2f | Average Value %.3f"
+            % (i + 1, len(loader), loss.item(), avgValue)
         )
 
     meanLoss = sum(lossLogger) / len(lossLogger)
-    meanNorm = sum(normLogger) / len(normLogger)
     meanValue = sum(valueLogger) / len(valueLogger)
-    return meanLoss, meanNorm, meanValue
+    return meanLoss, meanValue
 
 
 def test(epoch, env, net, device, config, filePath, verbose):

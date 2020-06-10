@@ -6,10 +6,12 @@ class PuzzleNet(nn.Module):
     def __init__(self, channelsIn):
         super(PuzzleNet, self).__init__()
 
-        self.puzzleSize = channelsIn
-        self.rowLength = int(channelsIn ** 0.5)
+        self.inputSize = channelsIn + 1
+        self.rowLength = int((channelsIn + 1) ** 0.5)
+
         self.convLayers = nn.Sequential(
-            nn.Conv2d(channelsIn + 1, 100, kernel_size=2, stride=1, padding=1),
+            nn.Conv2d(self.inputSize, 100,
+                      kernel_size=2, stride=1, padding=1),
             nn.ReLU(),
             nn.BatchNorm2d(100),
             nn.Conv2d(100, 200, kernel_size=2, stride=1, padding=0),
@@ -21,7 +23,7 @@ class PuzzleNet(nn.Module):
         )
 
         self.linear = nn.Sequential(
-            nn.Linear(self.getConvOutput(channelsIn + 1), 100),
+            nn.Linear(self.getConvOutput(self.inputSize), 100),
             nn.ReLU(),
             nn.BatchNorm1d(100),
             nn.Linear(100, 1),
@@ -29,7 +31,7 @@ class PuzzleNet(nn.Module):
 
     def getConvOutput(self, channelsIn):
         sample = torch.zeros(
-            1, channelsIn, int(channelsIn ** 0.5), int(channelsIn ** 0.5)
+            1, channelsIn, self.rowLength, self.rowLength
         )
 
         outConv = self.convLayers(sample)
@@ -37,7 +39,7 @@ class PuzzleNet(nn.Module):
 
     def forward(self, states):
 
-        states = states.view(-1, self.puzzleSize,
+        states = states.view(-1, self.inputSize,
                              self.rowLength, self.rowLength)
 
         outConv = self.convLayers(states)

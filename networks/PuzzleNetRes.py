@@ -15,7 +15,7 @@ class PuzzleNet(nn.Module):
             nn.BatchNorm1d(1000),
         )
 
-        for _ in range(2):
+        for _ in range(3):
             self.resBlocks.append(ResidualBlock(1000))
 
         self.finalLayer = nn.Linear(1000, 1)

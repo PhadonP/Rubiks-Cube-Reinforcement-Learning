@@ -52,7 +52,7 @@ if __name__ == "__main__":
             targetNet.load_state_dict(torch.load(args.network))
             print("Loading Network")
         else:
-            ValueError("No Network Found")
+            raise ValueError("No Network Found")
     else:
         netSavePath = os.path.join("saves", name) + ".pt"
 
@@ -66,18 +66,10 @@ if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    numGPUs = torch.cuda.device_count()
-    print("Using %d GPU(s)" % numGPUs)
-
-    if torch.cuda.device_count() > 0:
-        net = torch.nn.DataParallel(net)
-        targetNet = torch.nn.DataParallel(targetNet)
-
     net.to(device)
     targetNet.to(device)
 
-    for targetParam, param in zip(targetNet.parameters(), net.parameters()):
-        targetParam.data.copy_(param)
+    targetNet.load_state_dict(net.state_dict())
 
     optimizer = torch.optim.Adam(
         net.parameters(), lr=conf.lr, weight_decay=conf.weightDecay)
@@ -127,7 +119,7 @@ if __name__ == "__main__":
             num_workers=numWorkers
         )
 
-        meanLoss, meanNorm, meanValue = trainUtils.train(
+        meanLoss, meanValue = trainUtils.train(
             net, device, trainLoader, optimizer
         )
 
@@ -139,22 +131,24 @@ if __name__ == "__main__":
               (epoch, numEpochs, epochTime))
 
         tb.add_scalar('Loss', meanLoss, epoch)
-        tb.add_scalar('Norm', meanNorm, epoch)
         tb.add_scalar('Value', meanValue, epoch)
         tb.add_scalar('Time', epochTime, epoch)
 
+        if epoch == 100:
+            targetNet.load_state_dict(net.state_dict())
+
         if epoch % checkEpoch == 0:
             if meanLoss < lossThreshold:
-                for targetParam, param in zip(targetNet.parameters(), net.parameters()):
-                    targetParam.data.copy_(param)
+                targetNet.load_state_dict(net.state_dict())
                 print("Saving Model", flush=True)
                 torch.save(net.state_dict(), netSavePath)
             else:
-                print("Loss is too high, unable to update target network")
+                print("Loss is too high, unable to update target network", flush=True)
 
-        if epoch == 1 or (epoch % 100 == 0 and epoch < 1000) or epoch % 1000 == 0:
+        if (epoch % 100 == 0 and epoch < 1000 and numEpochs < 50000) or (epoch % 1000 == 0 and epoch < 10000) or epoch % 10000 == 0:
 
             tb.flush()
+            print("Testing Network", flush=True)
 
             if args.multiprocessing:
 

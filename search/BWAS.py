@@ -16,6 +16,8 @@ def batchedWeightedAStarSearch(
     verbose=True,
     queue=False
 ):
+    if not inspect.ismethod(heuristicFn):
+        heuristicFn.to(device)
 
     openNodes = []
     closedNodes = dict()
@@ -84,7 +86,7 @@ def batchedWeightedAStarSearch(
                         children[i] = found
                         nodesToAddIdx.append(i)
                 else:
-                    closedNodes[hash(node)] = node
+                    closedNodes[hash(child)] = child
                     nodesToAddIdx.append(i)
 
             children = [children[i] for i in nodesToAddIdx]
@@ -98,7 +100,9 @@ def batchedWeightedAStarSearch(
 
             hValue = heuristicFn(childrenStates).cpu()
 
-            bestHValue = min(hValue)
+            if hValue.nelement() > 0:
+                bestHValue = min(hValue)
+
             costs = hValue + depthWeight * depths
 
             for cost, child in zip(costs, children):

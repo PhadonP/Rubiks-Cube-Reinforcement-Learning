@@ -39,6 +39,10 @@ p {
   min-height: 15pt;
 }
 
+#solveSteps {
+  margin-top: 0pt;
+}
+
 button:disabled {
   opacity: 0.7;
 }

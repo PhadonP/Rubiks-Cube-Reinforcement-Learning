@@ -8,19 +8,13 @@ class CubeNet(nn.Module):
         channelsIn = cubeSize ** 2 * 36
 
         self.layers = nn.Sequential(
-            nn.Linear(channelsIn, 5000),
-            nn.ReLU(),
-            nn.BatchNorm1d(5000),
-            nn.Linear(5000, 3000),
-            nn.ReLU(),
-            nn.BatchNorm1d(3000),
-            nn.Linear(3000, 3000),
-            nn.ReLU(),
-            nn.BatchNorm1d(3000),
-            nn.Linear(3000, 1000),
+            nn.Linear(channelsIn, 1000),
             nn.ReLU(),
             nn.BatchNorm1d(1000),
-            nn.Linear(1000, 1),
+            nn.Linear(1000, 1000),
+            nn.ReLU(),
+            nn.BatchNorm1d(1000),
+            nn.Linear(1000, 1)
         )
 
     def forward(self, states):

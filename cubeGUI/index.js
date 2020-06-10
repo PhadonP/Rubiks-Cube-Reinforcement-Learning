@@ -61,6 +61,7 @@ function init() {
   scrambleButton = document.getElementById("scramble");
   switchPuzzleButton = document.getElementById("switchPuzzle");
   solveMessage = document.getElementById("solveMessage");
+  solveSteps = document.getElementById("solveSteps");
 
   rewindButton = document.getElementById("rewind");
   backButton = document.getElementById("back");
@@ -84,7 +85,6 @@ function onWindowResize() {
 
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
-
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
@@ -116,7 +116,8 @@ function solve() {
   switchPuzzleButton.disabled = true;
 
   xhr.onreadystatechange = () => {
-    let solveString = `Failed to find Solution`;
+    let solveMessageStr = `Failed to find Solution`;
+    let solveStepsStr = "";
     if ((xhr.readyState === 4) & !(xhr.status == 0)) {
       let response = JSON.parse(xhr.responseText);
       let isSolved = response.isSolved;
@@ -129,13 +130,16 @@ function solve() {
         if (solve.length > 0) {
           forwardButton.disabled = false;
           fastForwardButton.disabled = false;
+        } else {
+          solveMessageStr = "Already Solved!";
+          solveStepsStr = "";
         }
       }
     }
 
     cube.sequencing = false;
     solveMessage.innerHTML = solveMessageStr;
-    solveStepsStr.innerHTML = solveStepsStr;
+    solveSteps.innerHTML = solveStepsStr;
 
     solveButton.disabled = false;
     scrambleButton.disabled = false;
@@ -171,9 +175,11 @@ function switchPuzzle() {
   }
   if (cube.size == 3) {
     cube = new Cube(2, scene);
+    cubeSize = 2;
     switchPuzzleButton.innerHTML = "3x3";
   } else if (cube.size == 2) {
     cube = new Cube(3, scene);
+    cubeSize = 3;
     switchPuzzleButton.innerHTML = "2x2";
   }
   mouseControls.cube = cube;
@@ -227,6 +233,14 @@ function back() {
   }
 
   cube.solveIdx -= 1;
+
+  let doneMoves = `<font color="green">${cube.solveMoves
+    .slice(0, cube.solveIdx)
+    .join(" ")}</font>`;
+  let toDoMoves = `${cube.solveMoves
+    .slice(cube.solveIdx, cube.solveMoves.length)
+    .join(" ")}`;
+  solveSteps.innerHTML = doneMoves + " " + toDoMoves;
 }
 
 function forward() {
@@ -237,12 +251,20 @@ function forward() {
 
   cube.move(cube.solveMoves[cube.solveIdx]);
 
-  if (cube.solveIdx == cube.solveMoves.length) {
+  if (cube.solveIdx == cube.solveMoves.length - 1) {
     forwardButton.disabled = true;
     fastForwardButton.disabled = true;
   }
 
   cube.solveIdx += 1;
+
+  let doneMoves = `<font color="green">${cube.solveMoves
+    .slice(0, cube.solveIdx)
+    .join(" ")}</font>`;
+  let toDoMoves = `${cube.solveMoves
+    .slice(cube.solveIdx, cube.solveMoves.length)
+    .join(" ")}`;
+  solveSteps.innerHTML = doneMoves + " " + toDoMoves;
 }
 
 function fastForward() {

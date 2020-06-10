@@ -45,9 +45,12 @@ class ResidualBlock(nn.Module):
             nn.ReLU(),
             nn.BatchNorm1d(channelsIn),
             nn.Linear(channelsIn, channelsIn),
+        )
+
+        self.combinedLayers = nn.Sequential(
             nn.ReLU(),
             nn.BatchNorm1d(channelsIn),
         )
 
     def forward(self, states):
-        return self.layers(states) + states
+        return self.combinedLayers(self.layers(states) + states)

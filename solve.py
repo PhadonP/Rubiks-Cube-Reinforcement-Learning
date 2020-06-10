@@ -18,36 +18,35 @@ if __name__ == "__main__":
         "-c", "--config", required=True, help="Path of Config File", type=str
     )
     parser.add_argument(
-        "-s", "--scrambleDepth", default=300, help="Depth of Scramble", type=int
+        "-s", "--scrambleDepth", default=1000, help="Depth of Scramble", type=int
     )
     parser.add_argument(
         "-hf", "--heuristicFunction", default="net", help="net or manhattan", type=str
     )
 
     parser.add_argument(
-        "-sc", "--numSolve", default=100, help="Number to Solve", type=int
+        "-ns", "--numSolve", default=100, help="Number to Solve", type=int
     )
 
     args = parser.parse_args()
 
     conf = config.Config(args.config)
 
-    loadPath = args.network
-
-    if not os.path.isfile(loadPath):
-        raise ValueError("No Network Saved in this Path")
-
     env = getEnvironment(conf.puzzle)(conf.puzzleSize)
-    net = getNetwork(conf.puzzle, conf.networkType)(conf.puzzleSize)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    net.to(device)
-
-    net.load_state_dict(torch.load(loadPath))  # ["net_state_dict"])
-    net.eval()
-
     if args.heuristicFunction == "net":
+        net = getNetwork(conf.puzzle, conf.networkType)(conf.puzzleSize)
+
+        loadPath = args.network
+        if not os.path.isfile(loadPath):
+            raise ValueError("No Network Saved in this Path")
+
+        net.to(device)
+        net.load_state_dict(torch.load(loadPath))  # ["net_state_dict"])
+        net.eval()
+
         heuristicFn = net
     elif args.heuristicFunction == "manhattan" and conf.puzzle == "puzzleN":
         heuristicFn = env.manhattanDistance

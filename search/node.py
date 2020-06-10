@@ -22,7 +22,7 @@ class Node:
         self.parentMove = parentMove
         self.isSolved = isSolved
 
-        self.hashState = hash(self.state)
+        self.hashState = hash(self.state.numpy().data.tobytes())
 
     def __hash__(self):
         return self.hashState

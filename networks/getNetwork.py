@@ -9,6 +9,9 @@ def getNetwork(puzzle, networkType):
         elif networkType == "residual":
             from networks.PuzzleNetRes import PuzzleNet
             return PuzzleNet
+        elif networkType == "residualSELU":
+            from networks.PuzzleNetResSELU import PuzzleNet
+            return PuzzleNet
         else:
             ValueError("Invalid Network Type")
     elif puzzle == "cubeN":
@@ -17,6 +20,9 @@ def getNetwork(puzzle, networkType):
             return CubeNet
         elif networkType == "residual":
             from networks.CubeNetRes import CubeNet
+            return CubeNet
+        elif networkType == "paper":
+            from networks.CubeNetPaper import CubeNet
             return CubeNet
         else:
             ValueError("Invalid Network Type")

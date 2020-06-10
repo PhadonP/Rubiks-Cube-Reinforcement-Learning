@@ -21,6 +21,7 @@ class Cube {
 
     this.solveMoves = [];
     this.solveIdx = 0;
+    this.solveSteps = document.getElementById("solveSteps");
 
     this.colours = {
       U: new THREE.Color("ghostwhite"),
@@ -167,15 +168,14 @@ class Cube {
     this.animating = false;
     if (this.sequencing) {
       this.sequenceCount--;
+      if (this.solving) {
+        this.updateSolveSteps();
+      }
     }
 
     if ((this.sequenceCount == 0) & this.sequencing) {
       this.sequencing = false;
       this.sequenceEnd();
-    }
-
-    if (this.solving) {
-      solveSteps.innerHTML = 
     }
   };
 
@@ -270,6 +270,20 @@ class Cube {
         state[this.stickerIndex(currSide, ...cubie.layerPos)] = number;
       }
     }
+
+    if (this.size % 2) {
+      let centres = Array(6).fill(0);
+      for (let i = 0; i < 6; i++) {
+        centres[
+          state[
+            Math.floor((this.size * this.size) / 2) + i * this.size * this.size
+          ]
+        ] = i;
+      }
+      for (let i = 0; i < state.length; i++) {
+        state[i] = centres[state[i]];
+      }
+    }
     return state;
   };
 
@@ -325,6 +339,29 @@ class Cube {
     this.solving = true;
     this.solveMoves = solve;
     this.solveIdx = 0;
+  };
+
+  updateSolveSteps = () => {
+    if (this.solveIdx == 0) {
+      let doneMoves = `<font color="green">${this.solveMoves
+        .slice(0, this.sequenceCount)
+        .join(" ")}</font>`;
+      let toDoMoves = `${this.solveMoves
+        .slice(this.sequenceCount, this.solveMoves.length)
+        .join(" ")}`;
+      solveSteps.innerHTML = doneMoves + " " + toDoMoves;
+    } else {
+      let doneMoves = `<font color="green">${this.solveMoves
+        .slice(0, this.solveMoves.length - this.sequenceCount)
+        .join(" ")}</font>`;
+      let toDoMoves = `${this.solveMoves
+        .slice(
+          this.solveMoves.length - this.sequenceCount,
+          this.solveMoves.length
+        )
+        .join(" ")}`;
+      solveSteps.innerHTML = doneMoves + " " + toDoMoves;
+    }
   };
 }
 
