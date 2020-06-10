@@ -1,4 +1,4 @@
-# Rubiks-CUbe-Reinforcement-Learning
+# Rubiks-Cube-Reinforcement-Learning
 
 Solving a Rubik's Cube using Deep Reinforcement Learning and Search.
 
