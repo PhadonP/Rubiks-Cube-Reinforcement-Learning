@@ -1,6 +1,6 @@
 <p align="center">
   <a href="" rel="noopener">
- <img width=650pxsrc="Readme Images\RubiksCube.gif" alt="CubeDemonstration"></a>
+ <img width=650px src="Readme Images\RubiksCube.gif" alt="CubeDemonstration"></a>
 </p>
 
 <h1 align="center">Rubik's Cube Reinforcement Learning</h1>
