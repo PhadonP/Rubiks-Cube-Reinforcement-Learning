@@ -9,7 +9,7 @@
   "author": "Phadon Phipat",
   "license": "ISC",
   "dependencies": {
-    "three": "^0.116.1",
+    "three": "^0.125.0",
     "tween": "^0.9.0"
   }
 }
