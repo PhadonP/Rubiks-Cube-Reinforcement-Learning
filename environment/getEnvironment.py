@@ -3,7 +3,7 @@ def getEnvironment(environment):
         from environment.PuzzleN import PuzzleN
         return PuzzleN
     elif environment == "cubeN":
-        from environment.CubeN import CubeN
+        from environment.cubeN import CubeN
         return CubeN
     else:
         ValueError("Invalid Puzzle")
